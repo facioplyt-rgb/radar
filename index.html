@@ -2,8 +2,8 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MZK Radar Gorzów - System Zgłoszeń</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MZK Radar Gorzów - Wersja Mobilna</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -14,28 +14,42 @@
             --accent: #ef4444;
             --bg-dark: #0f172a;
             --text-main: #334155;
+            --panel-bg: rgba(255, 255, 255, 0.95);
         }
 
+        /* Twardy reset dla urządzeń mobilnych */
+        * { box-sizing: border-box; touch-action: manipulation; }
+        
         body, html {
             margin: 0;
             padding: 0;
-            height: 100%;
+            width: 100vw;
+            /* Używamy dvh (dynamic viewport height), aby paski adresu nie psuły layoutu */
+            height: 100dvh; 
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             overflow: hidden;
-            background-color: #f8fafc;
+            background-color: #e2e8f0;
         }
 
-        #app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-            flex-direction: row;
+        /* Mapa zajmuje absolutnie cały ekran z tyłu */
+        #map {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
         }
 
-        #sidebar {
-            width: 380px;
-            background: white;
-            box-shadow: 4px 0 25px rgba(0,0,0,0.1);
+        /* Panel UI - Na start jako dolny panel na telefonach (Bottom Sheet) */
+        #ui-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40dvh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -43,210 +57,148 @@
         }
 
         .brand {
-            padding: 20px;
+            padding: 16px 20px;
             background: var(--primary);
             color: white;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
         }
 
-        .brand h1 {
-            margin: 0;
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        .brand span {
-            background: #3b82f6;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
+        .brand h1 { margin: 0; font-size: 1.2rem; font-weight: 800; }
+        .brand span { background: #3b82f6; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
 
         .instructions {
-            padding: 15px 20px;
+            padding: 10px 20px;
             background: #eff6ff;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #1e40af;
             border-bottom: 1px solid #dbeafe;
+            text-align: center;
         }
 
         #events-list {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 12px;
+            -webkit-overflow-scrolling: touch; /* Płynne przewijanie na iOS */
         }
 
-        .empty-state {
-            text-align: center;
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 20px;
-        }
+        .empty-state { text-align: center; color: #64748b; font-size: 0.9rem; margin-top: 20px; padding: 0 20px; }
 
         .event-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .event-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-
-        #map {
-            flex: 1;
-            height: 100%;
-            z-index: 1;
-        }
-
-        .custom-marker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
             background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            border: 3px solid white;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        .popup-box {
-            min-width: 220px;
-            font-family: inherit;
-        }
-        .popup-header {
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .popup-details {
-            font-size: 12px;
-            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
             margin-bottom: 10px;
-            line-height: 1.4;
-        }
-        .voting-container {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 8px;
-        }
-        .vote-btn {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            transition: background 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .btn-yes { background-color: #e2e8f0; color: #1e293b; }
-        .btn-yes:hover { background-color: #cbd5e1; }
-        .btn-no { background-color: #e2e8f0; color: #1e293b; }
-        .btn-no:hover { background-color: #cbd5e1; }
 
+        /* Niestandardowe ikony mapy */
+        .custom-marker {
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 3px solid white; color: white; font-size: 18px;
+        }
+
+        /* Dymek (Popup) dostosowany pod gruby palec */
+        .popup-box { min-width: 220px; font-family: inherit; }
+        .popup-header { font-weight: bold; font-size: 15px; margin-bottom: 8px; }
+        .popup-details { font-size: 13px; color: #475569; margin-bottom: 12px; line-height: 1.5; }
+        .voting-container { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        
+        .vote-btn {
+            flex: 1; padding: 10px 5px; border: none; border-radius: 8px;
+            font-weight: bold; font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            background-color: #f1f5f9; color: #1e293b; transition: 0.2s;
+        }
         .vote-btn.active-up { background-color: #22c55e !important; color: white !important; }
         .vote-btn.active-down { background-color: #ef4444 !important; color: white !important; }
 
+        /* Modal pod Mobile */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            justify-content: center; align-items: center;
+            display: none; position: fixed; z-index: 3000;
+            left: 0; top: 0; width: 100vw; height: 100dvh;
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(5px);
+            justify-content: center; align-items: center; padding: 20px;
         }
+        
         .modal-content {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            background: white; width: 100%; max-width: 400px;
+            border-radius: 20px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
         }
-        .modal-content h2 { margin-top: 0; font-size: 1.25rem; color: #1e293b; }
+        
+        .modal-content h2 { margin-top: 0; font-size: 1.3rem; margin-bottom: 20px; text-align: center; }
         .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #475569; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #475569; }
+        
+        /* Ważne: font-size 16px zapobiega auto-zoomowi w iOS Safari */
         .form-group input, .form-group select {
-            width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;
+            width: 100%; padding: 14px; border: 1px solid #cbd5e1;
+            border-radius: 10px; font-size: 16px; background: #f8fafc;
         }
-        .form-group input:focus, .form-group select:focus {
-            outline: 2px solid #3b82f6; border-color: transparent;
-        }
-        .modal-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+        
+        .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
         .modal-actions button {
-            flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none;
+            flex: 1; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 15px; border: none; cursor: pointer;
         }
-        .btn-confirm-add { background: var(--primary); color: white; }
         .btn-close-modal { background: #e2e8f0; color: #475569; }
+        .btn-confirm-add { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(30,58,138,0.3); }
 
-        @media (max-width: 768px) {
-            #app-container { flex-direction: column-reverse; }
-            #sidebar { width: 100%; height: 35vh; }
-            #map { height: 65vh; }
-            .instructions { display: none; }
+        /* Media Query dla większych ekranów (Komputery/Tablety) */
+        @media (min-width: 768px) {
+            #ui-panel {
+                top: 0; bottom: 0; left: 0; width: 380px; height: 100dvh;
+                border-radius: 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1);
+            }
+            .brand { border-radius: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <div id="sidebar">
-            <div class="brand">
-                <h1>🚌 MZK Radar</h1>
-                <span>Gorzów & Okolice</span>
-            </div>
-            <div class="instructions">
-                📍 <strong>Instrukcja:</strong> Kliknij/dotknij dowolne miejsce na mapie, aby dodać nowe zgłoszenie na trasie MZK.
-            </div>
-            <div id="events-list"></div>
+    <div id="map"></div>
+
+    <div id="ui-panel">
+        <div class="brand">
+            <h1>🚌 MZK Radar</h1>
+            <span>Gorzów</span>
         </div>
-        <div id="map"></div>
+        <div class="instructions">
+            📍 Kliknij palcem na mapie, by zgłosić zdarzenie
+        </div>
+        <div id="events-list"></div>
     </div>
 
     <div id="addEventModal" class="modal">
         <div class="modal-content">
-            <h2>📢 Nowe zgłoszenie MZK</h2>
+            <h2>📢 Nowe zgłoszenie</h2>
             <div class="form-group">
-                <label>Co się dzieje?</label>
+                <label>Rodzaj zdarzenia</label>
                 <select id="form-type">
                     <option value="kanar">🎫 Kontrola biletów (Kanar)</option>
-                    <option value="awaria">🛠️ Awaria pojazdu / Autobusu</option>
+                    <option value="awaria">🛠️ Awaria pojazdu</option>
                     <option value="opoznienie">⏳ Duże opóźnienie</option>
                     <option value="inne">⚠️ Inne utrudnienie</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Numer linii (np. 104, 126, T2)</label>
-                <input type="text" id="form-line" placeholder="Wpisz linię">
+                <input type="text" id="form-line" placeholder="Wpisz linię" autocomplete="off">
             </div>
             <div class="form-group">
-                <label>Lokalizacja / Przystanek / Kierunek</label>
-                <input type="text" id="form-location" placeholder="np. Kłodawa Szkoła / Wieprzyce">
+                <label>Lokalizacja / Przystanek</label>
+                <input type="text" id="form-location" placeholder="np. Kłodawa Szkoła" autocomplete="off">
             </div>
             <div class="modal-actions">
                 <button class="btn-close-modal" onclick="closeModal(event)">Anuluj</button>
-                <button class="btn-confirm-add" onclick="submitNewEvent(event)">Dodaj Radar</button>
+                <button class="btn-confirm-add" onclick="submitNewEvent(event)">Dodaj na mapę</button>
             </div>
         </div>
     </div>
@@ -255,7 +207,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Twoja konfiguracja przekazana w pytaniu
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
@@ -265,16 +216,17 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
-        // Inicjalizacja Firebase & Realtime Database
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const reportsRef = ref(db, 'reports');
 
-        // Inicjalizacja mapy Leaflet
-        const map = L.map('map').setView([52.7367, 15.2288], 12);
+        // Ustawienia mapy dostosowane pod urządzenia mobilne (zoomControl na false przesuniemy domyślne przyciski +/-)
+        const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
+        L.control.zoom({ position: 'topright' }).addTo(map); // Przyciski zooma u góry po prawej, by panel dolny ich nie zasłaniał
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors | MZK Radar'
+            attribution: '© OSM | MZK Radar'
         }).addTo(map);
 
         let clickedLat = null;
@@ -306,41 +258,36 @@
             document.getElementById('addEventModal').style.display = 'none';
         }
 
-        // DODAWANIE DO CHMURY FIREBASE
         window.submitNewEvent = function(event) {
             if(event) event.stopPropagation();
 
             const type = document.getElementById('form-type').value;
-            const line = document.getElementById('form-line').value || 'Brak danych';
-            const location = document.getElementById('form-location').value || 'Nieokreślone';
+            const line = document.getElementById('form-line').value || 'Brak';
+            const location = document.getElementById('form-location').value || 'Nieznana';
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
-            // Generujemy nowy unikalny klucz w bazie danych Firebase
             const newReportRef = push(reportsRef);
             const reportId = newReportRef.key;
 
             const newReport = {
-                id: reportId,
-                lat: clickedLat,
-                lng: clickedLng,
-                type: type,
-                line: line,
-                location: location,
-                confirms: 1, 
-                denies: 0,
-                time: time
+                id: reportId, lat: clickedLat, lng: clickedLng,
+                type: type, line: line, location: location,
+                confirms: 1, denies: 0, time: time
             };
 
-            // Zapis do chmury
             set(newReportRef, newReport).then(() => {
                 localStorage.setItem(`vote_${reportId}`, 'up');
                 closeModal();
+                // Na urządzeniach mobilnych offsetujemy centrum, by dolny panel nie zasłaniał nowej pinezki
+                map.panTo([clickedLat - 0.005, clickedLng]); 
             });
         }
 
-        // GŁOSOWANIE Z SYNCHRONIZACJĄ W CHMURZE
         window.vote = function(event, id, voteType) {
-            if (event) event.stopPropagation();
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault(); // Zabezpieczenie przed "ghost clicks" na telefonach
+            }
 
             const report = reports[id];
             if (!report) return;
@@ -358,38 +305,30 @@
             } else {
                 if (previousVote === 'up') newConfirms--;
                 if (previousVote === 'down') newDenies--;
-
                 if (voteType === 'up') newConfirms++;
                 if (voteType === 'down') newDenies++;
-                
                 localStorage.setItem(storageKey, voteType);
             }
 
-            // Sprawdzenie limitu usuwania fałszywych zgłoszeń
             if (newDenies - newConfirms >= 3) {
                 remove(ref(db, `reports/${id}`));
                 localStorage.removeItem(storageKey);
             } else {
-                // Aktualizacja konkretnych pól w chmurze
-                update(ref(db, `reports/${id}`), {
-                    confirms: newConfirms,
-                    denies: newDenies
-                });
+                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies });
             }
         }
 
         window.focusOnReport = function(id) {
             const report = reports[id];
             if(report) {
-                map.setView([report.lat, report.lng], 15);
+                // Lekki offset w dół, by dymek idealnie wyśrodkował się nad dolnym panelem na telefonie
+                map.setView([report.lat - 0.005, report.lng], 15);
                 if (leafletMarkers[id]) leafletMarkers[id].openPopup();
             }
         }
 
-        // POBIERANIE I NASŁUCHIWANIE ZMIAN Z FIREBASE W CZASIE RZECZYWISTYM
         onValue(reportsRef, (snapshot) => {
-            const data = snapshot.val();
-            reports = data || {}; // Zapisujemy aktualny stan z chmury
+            reports = snapshot.val() || {}; 
             renderAll();
         });
 
@@ -397,7 +336,6 @@
             const listContainer = document.getElementById('events-list');
             listContainer.innerHTML = '';
 
-            // 1. Czyszczenie starych markerów z mapy, które zostały usunięte w chmurze
             for (let id in leafletMarkers) {
                 if (!reports[id]) {
                     map.removeLayer(leafletMarkers[id]);
@@ -406,13 +344,11 @@
             }
 
             const reportsArray = Object.values(reports);
-
             if (reportsArray.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">Brak aktywnych zgłoszeń. Kliknij na mapę, aby dodać pierwsze!</div>';
+                listContainer.innerHTML = '<div class="empty-state">Brak utrudnień na drodze.<br>Kliknij na mapę, by zgłosić.</div>';
                 return;
             }
 
-            // Sortowanie listy lokalnie
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
@@ -420,18 +356,17 @@
                 const score = (report.confirms || 0) - (report.denies || 0);
                 const userVote = localStorage.getItem(`vote_${report.id}`);
 
-                // Generator panelu bocznego
                 const card = document.createElement('div');
                 card.className = 'event-card';
                 card.onclick = () => focusOnReport(report.id);
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                         <span style="font-weight:bold; color:${config.color}">${config.label} (Linia ${report.line})</span>
-                        <span style="font-size:12px; color:#64748b;">🕒 ${report.time}</span>
+                        <span style="font-size:12px; color:#64748b; font-weight:bold;">🕒 ${report.time}</span>
                     </div>
                     <div style="font-size:13px; color:#475569; margin-bottom:6px;">📍 ${report.location}</div>
-                    <div style="font-size:11px; font-weight:bold; color: ${score >= 0 ? '#22c55e' : '#ef4444'}">
-                        Wiarygodność: ${score} pkt (${report.confirms || 0} 👍 / ${report.denies || 0} 👎)
+                    <div style="font-size:12px; font-weight:bold; color: ${score >= 0 ? '#16a34a' : '#dc2626'}">
+                        Wiarygodność: ${score} pkt (${report.confirms || 0} 👍)
                     </div>
                 `;
                 listContainer.appendChild(card);
@@ -439,32 +374,26 @@
                 const activeUpClass = userVote === 'up' ? 'active-up' : '';
                 const activeDownClass = userVote === 'down' ? 'active-down' : '';
 
-                // Popup HTML
                 const popupHtml = `
                     <div class="popup-box">
-                        <div class="popup-header" style="color: ${config.color}">
-                            ${config.label} - Linia ${report.line}
-                        </div>
+                        <div class="popup-header" style="color: ${config.color}">${config.label} - Linia ${report.line}</div>
                         <div class="popup-details">
-                            <strong>Miejsce:</strong> ${report.location}<br>
-                            <strong>Zgłoszono:</strong> ${report.time}<br>
-                            <strong>Bilans punktów:</strong> ${score} pkt
+                            <strong>Gdzie:</strong> ${report.location}<br>
+                            <strong>Kiedy:</strong> ${report.time}<br>
                         </div>
                         <div class="voting-container">
-                            <button class="vote-btn btn-yes ${activeUpClass}" onclick="vote(event, '${report.id}', 'up')">👍 Potwierdź</button>
-                            <button class="vote-btn btn-no ${activeDownClass}" onclick="vote(event, '${report.id}', 'down')">👎 Nieaktualne</button>
+                            <button type="button" class="vote-btn ${activeUpClass}" onmousedown="vote(event, '${report.id}', 'up')" ontouchstart="vote(event, '${report.id}', 'up')">👍 Prawda</button>
+                            <button type="button" class="vote-btn ${activeDownClass}" onmousedown="vote(event, '${report.id}', 'down')" ontouchstart="vote(event, '${report.id}', 'down')">👎 Fałsz</button>
                         </div>
                     </div>
                 `;
 
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                            ${config.label.split(' ')[0]}
-                           </div>`,
-                    iconSize: [36, 36],
-                    iconAnchor: [18, 18],
-                    popupAnchor: [0, -18]
+                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">${config.label.split(' ')[0]}</div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -20]
                 });
 
                 if (leafletMarkers[report.id]) {
@@ -473,7 +402,6 @@
                     const marker = L.marker([report.lat, report.lng], { icon: customIcon })
                         .addTo(map)
                         .bindPopup(popupHtml);
-                    
                     leafletMarkers[report.id] = marker;
                 }
             });
