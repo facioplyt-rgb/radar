@@ -3,202 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów - Wersja Mobilna</title>
+    <title>MZK Radar Gorzów - PRO</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         :root {
-            --primary: #1e3a8a;
-            --accent: #ef4444;
-            --bg-dark: #0f172a;
-            --text-main: #334155;
-            --panel-bg: rgba(255, 255, 255, 0.95);
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --danger: #ef4444;
+            --success: #10b981;
+            --bg-glass: rgba(255, 255, 255, 0.92);
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
         }
 
-        /* Twardy reset dla urządzeń mobilnych */
-        * { box-sizing: border-box; touch-action: manipulation; }
+        * { box-sizing: border-box; touch-action: manipulation; margin: 0; padding: 0; }
         
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            /* Używamy dvh (dynamic viewport height), aby paski adresu nie psuły layoutu */
-            height: 100dvh; 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            overflow: hidden;
-            background-color: #e2e8f0;
+            width: 100vw; height: 100dvh; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden; background-color: #f1f5f9;
         }
 
-        /* Mapa zajmuje absolutnie cały ekran z tyłu */
-        #map {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 1;
-        }
+        /* MAPA */
+        #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; }
 
-        /* Panel UI - Na start jako dolny panel na telefonach (Bottom Sheet) */
+        /* PANEL GŁÓWNY (UI) */
         #ui-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40dvh;
-            background: var(--panel-bg);
-            backdrop-filter: blur(10px);
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
+            position: absolute; bottom: 0; left: 0; width: 100vw; height: 42dvh;
+            background: var(--bg-glass); backdrop-filter: blur(12px);
+            border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.12);
+            z-index: 1000; display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .brand {
-            padding: 16px 20px;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
+        .panel-header {
+            padding: 20px; background: var(--primary); color: white;
+            border-radius: 28px 28px 0 0; display: flex; justify-content: space-between; align-items: center;
+        }
+        .panel-header h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .panel-header .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+
+        .instruction-banner {
+            background: #eff6ff; color: var(--primary-dark); font-size: 0.85rem; font-weight: 500;
+            padding: 12px 20px; text-align: center; border-bottom: 1px solid #dbeafe;
         }
 
-        .brand h1 { margin: 0; font-size: 1.2rem; font-weight: 800; }
-        .brand span { background: #3b82f6; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 30px 20px; }
 
-        .instructions {
-            padding: 10px 20px;
-            background: #eff6ff;
-            font-size: 0.8rem;
-            color: #1e40af;
-            border-bottom: 1px solid #dbeafe;
-            text-align: center;
-        }
-
-        #events-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            -webkit-overflow-scrolling: touch; /* Płynne przewijanie na iOS */
-        }
-
-        .empty-state { text-align: center; color: #64748b; font-size: 0.9rem; margin-top: 20px; padding: 0 20px; }
-
+        /* KARTY ZDARZEŃ */
         .event-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background: white; border: 1px solid #e2e8f0; border-radius: 16px;
+            padding: 16px; margin-bottom: 12px; cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s;
         }
+        .event-card:active { transform: scale(0.98); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-title { font-weight: 700; font-size: 1rem; }
+        .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        .card-location { font-size: 0.875rem; color: var(--text-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; }
+        .score-positive { background: #dcfce7; color: #166534; }
+        .score-negative { background: #fee2e2; color: #991b1b; }
 
-        /* Niestandardowe ikony mapy */
-        .custom-marker {
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border: 3px solid white; color: white; font-size: 18px;
+        /* MODAL (Dodawanie zdarzenia) */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            z-index: 2000; justify-content: center; align-items: center; padding: 16px;
         }
-
-        /* Dymek (Popup) dostosowany pod gruby palec */
-        .popup-box { min-width: 220px; font-family: inherit; }
-        .popup-header { font-weight: bold; font-size: 15px; margin-bottom: 8px; }
-        .popup-details { font-size: 13px; color: #475569; margin-bottom: 12px; line-height: 1.5; }
-        .voting-container { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-        
-        .vote-btn {
-            flex: 1; padding: 10px 5px; border: none; border-radius: 8px;
-            font-weight: bold; font-size: 12px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
-            background-color: #f1f5f9; color: #1e293b; transition: 0.2s;
-        }
-        .vote-btn.active-up { background-color: #22c55e !important; color: white !important; }
-        .vote-btn.active-down { background-color: #ef4444 !important; color: white !important; }
-
-        /* Modal pod Mobile */
-        .modal {
-            display: none; position: fixed; z-index: 3000;
-            left: 0; top: 0; width: 100vw; height: 100dvh;
-            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(5px);
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        
         .modal-content {
-            background: white; width: 100%; max-width: 400px;
-            border-radius: 20px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+            background: white; width: 100%; max-width: 420px; border-radius: 24px;
+            padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        @keyframes modalSlideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        .modal-content h2 { margin-top: 0; font-size: 1.3rem; margin-bottom: 20px; text-align: center; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #475569; }
-        
-        /* Ważne: font-size 16px zapobiega auto-zoomowi w iOS Safari */
-        .form-group input, .form-group select {
-            width: 100%; padding: 14px; border: 1px solid #cbd5e1;
-            border-radius: 10px; font-size: 16px; background: #f8fafc;
+        .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--text-dark); margin-bottom: 20px; text-align: center; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 14px; border: 1.5px solid #cbd5e1; border-radius: 12px;
+            font-size: 16px; background: #f8fafc; color: var(--text-dark); transition: border-color 0.2s;
         }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: white; }
         
-        .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
-        .modal-actions button {
-            flex: 1; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 15px; border: none; cursor: pointer;
-        }
-        .btn-close-modal { background: #e2e8f0; color: #475569; }
-        .btn-confirm-add { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(30,58,138,0.3); }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.8; }
+        .btn-cancel { background: #f1f5f9; color: var(--text-muted); }
+        .btn-submit { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
 
-        /* Media Query dla większych ekranów (Komputery/Tablety) */
+        /* MARKERY I DYMKI NA MAPIE */
+        .map-marker {
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: white; border: 3px solid white;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3); color: white; font-size: 20px;
+        }
+        .leaflet-popup-content-wrapper { border-radius: 16px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; min-width: 240px; }
+        
+        .popup-header { padding: 12px 16px; font-weight: 700; font-size: 15px; color: white; }
+        .popup-body { padding: 12px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.5; }
+        .popup-actions { display: flex; padding: 12px 16px; gap: 10px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .vote-btn {
+            flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: 700; font-size: 12px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            background: white; border: 1px solid #cbd5e1; color: var(--text-dark); cursor: pointer;
+        }
+        .vote-btn.active-up { background: var(--success); color: white; border-color: var(--success); }
+        .vote-btn.active-down { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* SYSTEM POWIADOMIEŃ (TOAST) */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: #1e293b; color: white; padding: 12px 24px; border-radius: 50px;
+            font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0;
+        }
+        @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
+        @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
+
+        /* RESPONSIVE DESKTOP */
         @media (min-width: 768px) {
-            #ui-panel {
-                top: 0; bottom: 0; left: 0; width: 380px; height: 100dvh;
-                border-radius: 0; box-shadow: 4px 0 25px rgba(0,0,0,0.1);
-            }
-            .brand { border-radius: 0; }
+            #ui-panel { width: 400px; height: 100dvh; border-radius: 0; border-right: 1px solid rgba(0,0,0,0.1); }
+            .panel-header { border-radius: 0; }
+            L.control.zoom { display: block; }
         }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
+    <div id="toast-container"></div>
 
     <div id="ui-panel">
-        <div class="brand">
+        <div class="panel-header">
             <h1>🚌 MZK Radar</h1>
-            <span>Gorzów</span>
+            <span class="badge">Gorzów & Okolice</span>
         </div>
-        <div class="instructions">
-            📍 Kliknij palcem na mapie, by zgłosić zdarzenie
+        <div class="instruction-banner">📍 Puknij w mapę, by zgłosić zdarzenie</div>
+        <div id="events-list">
+            <div class="empty-state">Ładowanie danych z chmury...</div>
         </div>
-        <div id="events-list"></div>
     </div>
 
-    <div id="addEventModal" class="modal">
+    <div id="modalOverlay" class="modal-overlay">
         <div class="modal-content">
-            <h2>📢 Nowe zgłoszenie</h2>
-            <div class="form-group">
+            <h2 class="modal-title">Nowe Zgłoszenie</h2>
+            
+            <div class="input-group">
                 <label>Rodzaj zdarzenia</label>
-                <select id="form-type">
+                <select id="event-type">
                     <option value="kanar">🎫 Kontrola biletów (Kanar)</option>
                     <option value="awaria">🛠️ Awaria pojazdu</option>
-                    <option value="opoznienie">⏳ Duże opóźnienie</option>
+                    <option value="opoznienie">⏳ Opóźnienie / Korek</option>
                     <option value="inne">⚠️ Inne utrudnienie</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Numer linii (np. 104, 126, T2)</label>
-                <input type="text" id="form-line" placeholder="Wpisz linię" autocomplete="off">
+            
+            <div class="input-group">
+                <label>Linia (np. 104, 126, T1)</label>
+                <input type="text" id="event-line" placeholder="Wpisz numer linii..." autocomplete="off">
             </div>
-            <div class="form-group">
-                <label>Lokalizacja / Przystanek</label>
-                <input type="text" id="form-location" placeholder="np. Kłodawa Szkoła" autocomplete="off">
+            
+            <div class="input-group">
+                <label>Przystanek / Kierunek</label>
+                <input type="text" id="event-location" placeholder="np. Kłodawa Szkoła..." autocomplete="off">
             </div>
-            <div class="modal-actions">
-                <button class="btn-close-modal" onclick="closeModal(event)">Anuluj</button>
-                <button class="btn-confirm-add" onclick="submitNewEvent(event)">Dodaj na mapę</button>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-cancel" id="btn-cancel">Anuluj</button>
+                <button type="button" class="btn btn-submit" id="btn-submit">Dodaj do radaru</button>
             </div>
         </div>
     </div>
@@ -207,6 +185,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Konfiguracja
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
@@ -216,78 +195,120 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const reportsRef = ref(db, 'reports');
-
-        // Ustawienia mapy dostosowane pod urządzenia mobilne (zoomControl na false przesuniemy domyślne przyciski +/-)
-        const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
-        L.control.zoom({ position: 'topright' }).addTo(map); // Przyciski zooma u góry po prawej, by panel dolny ich nie zasłaniał
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OSM | MZK Radar'
-        }).addTo(map);
-
-        let clickedLat = null;
-        let clickedLng = null;
-        let reports = {}; 
-        let leafletMarkers = {};
-
-        const eventConfig = {
+        // Typy zdarzeń z kolorami
+        const EVENT_CONFIG = {
             kanar: { label: '🎫 Kanar', color: '#ef4444' },
             awaria: { label: '🛠️ Awaria', color: '#7f1d1d' },
             opoznienie: { label: '⏳ Opóźnienie', color: '#f59e0b' },
-            inne: { label: '⚠️ Inne', color: '#3b82f6' }
+            inne: { label: '⚠️ Inne', color: '#2563eb' }
         };
 
-        map.on('click', function(e) {
-            clickedLat = e.latlng.lat;
-            clickedLng = e.latlng.lng;
-            openModal();
+        let db, reportsRef;
+        let reports = {};
+        let leafletMarkers = {};
+        let tempCoords = null;
+
+        // Inicjalizacja Mapy
+        const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        // Funkcja Powiadomień (Toast)
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- GŁÓWNA LOGIKA INICJALIZACJI FIREBASE ---
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            reportsRef = ref(db, 'reports');
+            showToast("✅ Połączono z serwerem");
+        } catch (error) {
+            console.error("Błąd inicjalizacji Firebase:", error);
+            showToast("❌ Błąd połączenia z bazą!");
+        }
+
+        // --- OBSŁUGA ZDARZEŃ DOM (Native Event Listeners, Zero Inline JS) ---
+        
+        const modal = document.getElementById('modalOverlay');
+        const btnCancel = document.getElementById('btn-cancel');
+        const btnSubmit = document.getElementById('btn-submit');
+        
+        // 1. Kliknięcie w mapę otwiera modal
+        map.on('click', (e) => {
+            tempCoords = e.latlng;
+            document.getElementById('event-line').value = '';
+            document.getElementById('event-location').value = '';
+            modal.style.display = 'flex';
         });
 
-        window.openModal = function() {
-            document.getElementById('addEventModal').style.display = 'flex';
-            document.getElementById('form-line').value = '';
-            document.getElementById('form-location').value = '';
-        }
+        // 2. Anulowanie
+        btnCancel.addEventListener('click', () => {
+            modal.style.display = 'none';
+            tempCoords = null;
+        });
 
-        window.closeModal = function(event) {
-            if(event) event.stopPropagation();
-            document.getElementById('addEventModal').style.display = 'none';
-        }
+        // 3. Zapis do Firebase (Zabezpieczony przed double-clickiem)
+        btnSubmit.addEventListener('click', () => {
+            if (!tempCoords) return;
 
-        window.submitNewEvent = function(event) {
-            if(event) event.stopPropagation();
+            const type = document.getElementById('event-type').value;
+            const line = document.getElementById('event-line').value.trim() || 'Nieznana';
+            const location = document.getElementById('event-location').value.trim() || 'Brak danych';
+            const time = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 
-            const type = document.getElementById('form-type').value;
-            const line = document.getElementById('form-line').value || 'Brak';
-            const location = document.getElementById('form-location').value || 'Nieznana';
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Wysyłanie...";
+
             const newReportRef = push(reportsRef);
             const reportId = newReportRef.key;
 
             const newReport = {
-                id: reportId, lat: clickedLat, lng: clickedLng,
-                type: type, line: line, location: location,
-                confirms: 1, denies: 0, time: time
+                id: reportId,
+                lat: tempCoords.lat,
+                lng: tempCoords.lng,
+                type: type,
+                line: line,
+                location: location,
+                confirms: 1, // Autor potwierdza
+                denies: 0,
+                time: time
             };
 
             set(newReportRef, newReport).then(() => {
                 localStorage.setItem(`vote_${reportId}`, 'up');
-                closeModal();
-                // Na urządzeniach mobilnych offsetujemy centrum, by dolny panel nie zasłaniał nowej pinezki
-                map.panTo([clickedLat - 0.005, clickedLng]); 
+                modal.style.display = 'none';
+                showToast("📍 Dodano nowe zgłoszenie na mapę!");
+                map.panTo([tempCoords.lat - 0.005, tempCoords.lng]); // Wyśrodkowanie z marginesem na panel
+            }).catch(error => {
+                console.error("Błąd zapisu Firebase:", error);
+                showToast("❌ Błąd! Sprawdź reguły bazy (Rules).");
+            }).finally(() => {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Dodaj do radaru";
+                tempCoords = null;
             });
-        }
+        });
 
-        window.vote = function(event, id, voteType) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault(); // Zabezpieczenie przed "ghost clicks" na telefonach
-            }
+        // --- NASŁUCHIWANIE BAZY W CZASIE RZECZYWISTYM ---
+        onValue(reportsRef, (snapshot) => {
+            reports = snapshot.val() || {};
+            renderUI();
+        }, (error) => {
+            console.error("Błąd odczytu bazy:", error);
+            document.getElementById('events-list').innerHTML = '<div class="empty-state">❌ Odmowa dostępu. Ustaw reguły Firebase na true!</div>';
+        });
+
+        // --- GŁOSOWANIE (Globalna funkcja podpięta pod obiekt window dla wygody markerów Leaflet) ---
+        window.handleVote = function(e, id, voteType) {
+            e.preventDefault();
+            e.stopPropagation();
 
             const report = reports[id];
             if (!report) return;
@@ -298,6 +319,7 @@
             let newConfirms = report.confirms || 0;
             let newDenies = report.denies || 0;
 
+            // Algorytm przełączania głosu
             if (previousVote === voteType) {
                 if (voteType === 'up') newConfirms--;
                 if (voteType === 'down') newDenies--;
@@ -310,32 +332,23 @@
                 localStorage.setItem(storageKey, voteType);
             }
 
+            // Automatyczne usuwanie fałszywych (np. różnica głosów >= 3)
             if (newDenies - newConfirms >= 3) {
-                remove(ref(db, `reports/${id}`));
-                localStorage.removeItem(storageKey);
+                remove(ref(db, `reports/${id}`)).then(() => {
+                    localStorage.removeItem(storageKey);
+                    showToast("🗑️ Usunięto nieaktualne zgłoszenie");
+                });
             } else {
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies });
             }
-        }
+        };
 
-        window.focusOnReport = function(id) {
-            const report = reports[id];
-            if(report) {
-                // Lekki offset w dół, by dymek idealnie wyśrodkował się nad dolnym panelem na telefonie
-                map.setView([report.lat - 0.005, report.lng], 15);
-                if (leafletMarkers[id]) leafletMarkers[id].openPopup();
-            }
-        }
-
-        onValue(reportsRef, (snapshot) => {
-            reports = snapshot.val() || {}; 
-            renderAll();
-        });
-
-        function renderAll() {
+        // --- RENDEROWANIE INTERFEJSU I PINEZEK ---
+        function renderUI() {
             const listContainer = document.getElementById('events-list');
             listContainer.innerHTML = '';
 
+            // 1. Czyszczenie usuniętych markerów
             for (let id in leafletMarkers) {
                 if (!reports[id]) {
                     map.removeLayer(leafletMarkers[id]);
@@ -344,55 +357,68 @@
             }
 
             const reportsArray = Object.values(reports);
+            
             if (reportsArray.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">Brak utrudnień na drodze.<br>Kliknij na mapę, by zgłosić.</div>';
+                listContainer.innerHTML = '<div class="empty-state">✅ Droga czysta. Brak utrudnień z bazy danych.</div>';
                 return;
             }
 
+            // Sortowanie: Najpierw te z najwyższym bilansem pozytywnym
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
-                const config = eventConfig[report.type];
+                const config = EVENT_CONFIG[report.type];
                 const score = (report.confirms || 0) - (report.denies || 0);
                 const userVote = localStorage.getItem(`vote_${report.id}`);
+                const isPositive = score >= 0;
 
+                // --- Generowanie listy w panelu boczny/dolnym ---
                 const card = document.createElement('div');
                 card.className = 'event-card';
-                card.onclick = () => focusOnReport(report.id);
+                card.onclick = () => {
+                    map.setView([report.lat - 0.005, report.lng], 15);
+                    if (leafletMarkers[report.id]) leafletMarkers[report.id].openPopup();
+                };
+                
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <span style="font-weight:bold; color:${config.color}">${config.label} (Linia ${report.line})</span>
-                        <span style="font-size:12px; color:#64748b; font-weight:bold;">🕒 ${report.time}</span>
+                    <div class="card-header">
+                        <span class="card-title" style="color: ${config.color}">${config.label} (${report.line})</span>
+                        <span class="card-time">${report.time}</span>
                     </div>
-                    <div style="font-size:13px; color:#475569; margin-bottom:6px;">📍 ${report.location}</div>
-                    <div style="font-size:12px; font-weight:bold; color: ${score >= 0 ? '#16a34a' : '#dc2626'}">
-                        Wiarygodność: ${score} pkt (${report.confirms || 0} 👍)
+                    <div class="card-location">📍 ${report.location}</div>
+                    <div class="card-score ${isPositive ? 'score-positive' : 'score-negative'}">
+                        ${isPositive ? '👍' : '👎'} Bilans: ${score}
                     </div>
                 `;
                 listContainer.appendChild(card);
 
+                // --- Generowanie Markera i Dymka (Popup) ---
                 const activeUpClass = userVote === 'up' ? 'active-up' : '';
                 const activeDownClass = userVote === 'down' ? 'active-down' : '';
 
                 const popupHtml = `
-                    <div class="popup-box">
-                        <div class="popup-header" style="color: ${config.color}">${config.label} - Linia ${report.line}</div>
-                        <div class="popup-details">
-                            <strong>Gdzie:</strong> ${report.location}<br>
-                            <strong>Kiedy:</strong> ${report.time}<br>
-                        </div>
-                        <div class="voting-container">
-                            <button type="button" class="vote-btn ${activeUpClass}" onmousedown="vote(event, '${report.id}', 'up')" ontouchstart="vote(event, '${report.id}', 'up')">👍 Prawda</button>
-                            <button type="button" class="vote-btn ${activeDownClass}" onmousedown="vote(event, '${report.id}', 'down')" ontouchstart="vote(event, '${report.id}', 'down')">👎 Fałsz</button>
-                        </div>
+                    <div class="popup-header" style="background-color: ${config.color}">
+                        ${config.label} - Linia ${report.line}
+                    </div>
+                    <div class="popup-body">
+                        <strong>📍 Przystanek:</strong> ${report.location}<br>
+                        <strong>🕒 Dodano:</strong> ${report.time}<br>
+                    </div>
+                    <div class="popup-actions">
+                        <button type="button" class="vote-btn ${activeUpClass}" onmousedown="handleVote(event, '${report.id}', 'up')" ontouchstart="handleVote(event, '${report.id}', 'up')">
+                            👍 Potwierdzam
+                        </button>
+                        <button type="button" class="vote-btn ${activeDownClass}" onmousedown="handleVote(event, '${report.id}', 'down')" ontouchstart="handleVote(event, '${report.id}', 'down')">
+                            👎 Ściema / Brak
+                        </button>
                     </div>
                 `;
 
                 const customIcon = L.divIcon({
-                    className: 'custom-marker',
+                    className: 'map-marker',
                     html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">${config.label.split(' ')[0]}</div>`,
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20],
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 22],
                     popupAnchor: [0, -20]
                 });
 
