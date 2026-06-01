@@ -1,1 +1,483 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MZK Radar Gorzów - System Zgłoszeń</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --accent: #ef4444;
+            --bg-dark: #0f172a;
+            --text-main: #334155;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+
+        #app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            flex-direction: row;
+        }
+
+        #sidebar {
+            width: 380px;
+            background: white;
+            box-shadow: 4px 0 25px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .brand {
+            padding: 20px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .brand span {
+            background: #3b82f6;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .instructions {
+            padding: 15px 20px;
+            background: #eff6ff;
+            font-size: 0.85rem;
+            color: #1e40af;
+            border-bottom: 1px solid #dbeafe;
+        }
+
+        #events-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        .event-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        #map {
+            flex: 1;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            border: 3px solid white;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .popup-box {
+            min-width: 220px;
+            font-family: inherit;
+        }
+        .popup-header {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .popup-details {
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .voting-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+        }
+        .vote-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .btn-yes { background-color: #e2e8f0; color: #1e293b; }
+        .btn-yes:hover { background-color: #cbd5e1; }
+        .btn-no { background-color: #e2e8f0; color: #1e293b; }
+        .btn-no:hover { background-color: #cbd5e1; }
+
+        .vote-btn.active-up { background-color: #22c55e !important; color: white !important; }
+        .vote-btn.active-down { background-color: #ef4444 !important; color: white !important; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .modal-content h2 { margin-top: 0; font-size: 1.25rem; color: #1e293b; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #475569; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: 2px solid #3b82f6; border-color: transparent;
+        }
+        .modal-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+        .modal-actions button {
+            flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none;
+        }
+        .btn-confirm-add { background: var(--primary); color: white; }
+        .btn-close-modal { background: #e2e8f0; color: #475569; }
+
+        @media (max-width: 768px) {
+            #app-container { flex-direction: column-reverse; }
+            #sidebar { width: 100%; height: 35vh; }
+            #map { height: 65vh; }
+            .instructions { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="brand">
+                <h1>🚌 MZK Radar</h1>
+                <span>Gorzów & Okolice</span>
+            </div>
+            <div class="instructions">
+                📍 <strong>Instrukcja:</strong> Kliknij/dotknij dowolne miejsce na mapie, aby dodać nowe zgłoszenie na trasie MZK.
+            </div>
+            <div id="events-list"></div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <h2>📢 Nowe zgłoszenie MZK</h2>
+            <div class="form-group">
+                <label>Co się dzieje?</label>
+                <select id="form-type">
+                    <option value="kanar">🎫 Kontrola biletów (Kanar)</option>
+                    <option value="awaria">🛠️ Awaria pojazdu / Autobusu</option>
+                    <option value="opoznienie">⏳ Duże opóźnienie</option>
+                    <option value="inne">⚠️ Inne utrudnienie</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Numer linii (np. 104, 126, T2)</label>
+                <input type="text" id="form-line" placeholder="Wpisz linię">
+            </div>
+            <div class="form-group">
+                <label>Lokalizacja / Przystanek / Kierunek</label>
+                <input type="text" id="form-location" placeholder="np. Kłodawa Szkoła / Wieprzyce">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-close-modal" onclick="closeModal(event)">Anuluj</button>
+                <button class="btn-confirm-add" onclick="submitNewEvent(event)">Dodaj Radar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Twoja konfiguracja przekazana w pytaniu
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
+            authDomain: "radar-585fa.firebaseapp.com",
+            projectId: "radar-585fa",
+            storageBucket: "radar-585fa.firebasestorage.app",
+            messagingSenderId: "273151127719",
+            appId: "1:273151127719:web:0f4477fafe77248e312b82"
+        };
+
+        // Inicjalizacja Firebase & Realtime Database
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const reportsRef = ref(db, 'reports');
+
+        // Inicjalizacja mapy Leaflet
+        const map = L.map('map').setView([52.7367, 15.2288], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors | MZK Radar'
+        }).addTo(map);
+
+        let clickedLat = null;
+        let clickedLng = null;
+        let reports = {}; 
+        let leafletMarkers = {};
+
+        const eventConfig = {
+            kanar: { label: '🎫 Kanar', color: '#ef4444' },
+            awaria: { label: '🛠️ Awaria', color: '#7f1d1d' },
+            opoznienie: { label: '⏳ Opóźnienie', color: '#f59e0b' },
+            inne: { label: '⚠️ Inne', color: '#3b82f6' }
+        };
+
+        map.on('click', function(e) {
+            clickedLat = e.latlng.lat;
+            clickedLng = e.latlng.lng;
+            openModal();
+        });
+
+        window.openModal = function() {
+            document.getElementById('addEventModal').style.display = 'flex';
+            document.getElementById('form-line').value = '';
+            document.getElementById('form-location').value = '';
+        }
+
+        window.closeModal = function(event) {
+            if(event) event.stopPropagation();
+            document.getElementById('addEventModal').style.display = 'none';
+        }
+
+        // DODAWANIE DO CHMURY FIREBASE
+        window.submitNewEvent = function(event) {
+            if(event) event.stopPropagation();
+
+            const type = document.getElementById('form-type').value;
+            const line = document.getElementById('form-line').value || 'Brak danych';
+            const location = document.getElementById('form-location').value || 'Nieokreślone';
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Generujemy nowy unikalny klucz w bazie danych Firebase
+            const newReportRef = push(reportsRef);
+            const reportId = newReportRef.key;
+
+            const newReport = {
+                id: reportId,
+                lat: clickedLat,
+                lng: clickedLng,
+                type: type,
+                line: line,
+                location: location,
+                confirms: 1, 
+                denies: 0,
+                time: time
+            };
+
+            // Zapis do chmury
+            set(newReportRef, newReport).then(() => {
+                localStorage.setItem(`vote_${reportId}`, 'up');
+                closeModal();
+            });
+        }
+
+        // GŁOSOWANIE Z SYNCHRONIZACJĄ W CHMURZE
+        window.vote = function(event, id, voteType) {
+            if (event) event.stopPropagation();
+
+            const report = reports[id];
+            if (!report) return;
+
+            const storageKey = `vote_${id}`;
+            const previousVote = localStorage.getItem(storageKey);
+
+            let newConfirms = report.confirms || 0;
+            let newDenies = report.denies || 0;
+
+            if (previousVote === voteType) {
+                if (voteType === 'up') newConfirms--;
+                if (voteType === 'down') newDenies--;
+                localStorage.removeItem(storageKey);
+            } else {
+                if (previousVote === 'up') newConfirms--;
+                if (previousVote === 'down') newDenies--;
+
+                if (voteType === 'up') newConfirms++;
+                if (voteType === 'down') newDenies++;
+                
+                localStorage.setItem(storageKey, voteType);
+            }
+
+            // Sprawdzenie limitu usuwania fałszywych zgłoszeń
+            if (newDenies - newConfirms >= 3) {
+                remove(ref(db, `reports/${id}`));
+                localStorage.removeItem(storageKey);
+            } else {
+                // Aktualizacja konkretnych pól w chmurze
+                update(ref(db, `reports/${id}`), {
+                    confirms: newConfirms,
+                    denies: newDenies
+                });
+            }
+        }
+
+        window.focusOnReport = function(id) {
+            const report = reports[id];
+            if(report) {
+                map.setView([report.lat, report.lng], 15);
+                if (leafletMarkers[id]) leafletMarkers[id].openPopup();
+            }
+        }
+
+        // POBIERANIE I NASŁUCHIWANIE ZMIAN Z FIREBASE W CZASIE RZECZYWISTYM
+        onValue(reportsRef, (snapshot) => {
+            const data = snapshot.val();
+            reports = data || {}; // Zapisujemy aktualny stan z chmury
+            renderAll();
+        });
+
+        function renderAll() {
+            const listContainer = document.getElementById('events-list');
+            listContainer.innerHTML = '';
+
+            // 1. Czyszczenie starych markerów z mapy, które zostały usunięte w chmurze
+            for (let id in leafletMarkers) {
+                if (!reports[id]) {
+                    map.removeLayer(leafletMarkers[id]);
+                    delete leafletMarkers[id];
+                }
+            }
+
+            const reportsArray = Object.values(reports);
+
+            if (reportsArray.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">Brak aktywnych zgłoszeń. Kliknij na mapę, aby dodać pierwsze!</div>';
+                return;
+            }
+
+            // Sortowanie listy lokalnie
+            reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
+
+            reportsArray.forEach(report => {
+                const config = eventConfig[report.type];
+                const score = (report.confirms || 0) - (report.denies || 0);
+                const userVote = localStorage.getItem(`vote_${report.id}`);
+
+                // Generator panelu bocznego
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.onclick = () => focusOnReport(report.id);
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span style="font-weight:bold; color:${config.color}">${config.label} (Linia ${report.line})</span>
+                        <span style="font-size:12px; color:#64748b;">🕒 ${report.time}</span>
+                    </div>
+                    <div style="font-size:13px; color:#475569; margin-bottom:6px;">📍 ${report.location}</div>
+                    <div style="font-size:11px; font-weight:bold; color: ${score >= 0 ? '#22c55e' : '#ef4444'}">
+                        Wiarygodność: ${score} pkt (${report.confirms || 0} 👍 / ${report.denies || 0} 👎)
+                    </div>
+                `;
+                listContainer.appendChild(card);
+
+                const activeUpClass = userVote === 'up' ? 'active-up' : '';
+                const activeDownClass = userVote === 'down' ? 'active-down' : '';
+
+                // Popup HTML
+                const popupHtml = `
+                    <div class="popup-box">
+                        <div class="popup-header" style="color: ${config.color}">
+                            ${config.label} - Linia ${report.line}
+                        </div>
+                        <div class="popup-details">
+                            <strong>Miejsce:</strong> ${report.location}<br>
+                            <strong>Zgłoszono:</strong> ${report.time}<br>
+                            <strong>Bilans punktów:</strong> ${score} pkt
+                        </div>
+                        <div class="voting-container">
+                            <button class="vote-btn btn-yes ${activeUpClass}" onclick="vote(event, '${report.id}', 'up')">👍 Potwierdź</button>
+                            <button class="vote-btn btn-no ${activeDownClass}" onclick="vote(event, '${report.id}', 'down')">👎 Nieaktualne</button>
+                        </div>
+                    </div>
+                `;
+
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            ${config.label.split(' ')[0]}
+                           </div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18],
+                    popupAnchor: [0, -18]
+                });
+
+                if (leafletMarkers[report.id]) {
+                    leafletMarkers[report.id].setPopupContent(popupHtml);
+                } else {
+                    const marker = L.marker([report.lat, report.lng], { icon: customIcon })
+                        .addTo(map)
+                        .bindPopup(popupHtml);
+                    
+                    leafletMarkers[report.id] = marker;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
