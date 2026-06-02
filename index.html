@@ -144,7 +144,7 @@
             <h1>🚌 MZK Radar</h1>
             <span class="badge">Gorzów & Okolice</span>
         </div>
-        <div class="instruction-banner">📍 Puknij w mapę, by zgłosić zdarzenie</div>
+        <div class="instruction-banner">📍 Kliknij w dowolne miejsce na mapie, by dodać zgłoszenie</div>
         <div id="events-list">
             <div class="empty-state">Ładowanie danych z chmury...</div>
         </div>
@@ -185,10 +185,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Konfiguracja
+        // Zaktualizowana, pełna konfiguracja z Twoim adresem URL chmury
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
+            databaseURL: "https://radar-585fa-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "radar-585fa",
             storageBucket: "radar-585fa.firebasestorage.app",
             messagingSenderId: "273151127719",
@@ -208,7 +209,7 @@
         let leafletMarkers = {};
         let tempCoords = null;
 
-        // Inicjalizacja Mapy
+        // Inicjalizacja Mapy (centrowanie na Gorzów)
         const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
         L.control.zoom({ position: 'topright' }).addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -223,24 +224,22 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        // --- GŁÓWNA LOGIKA INICJALIZACJI FIREBASE ---
+        // Inicjalizacja Firebase
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
             reportsRef = ref(db, 'reports');
-            showToast("✅ Połączono z serwerem");
+            showToast("✅ Połączono z radarem w chmurze");
         } catch (error) {
-            console.error("Błąd inicjalizacji Firebase:", error);
-            showToast("❌ Błąd połączenia z bazą!");
+            console.error("Błąd Firebase:", error);
+            showToast("❌ Błąd połączenia z siecią!");
         }
 
-        // --- OBSŁUGA ZDARZEŃ DOM (Native Event Listeners, Zero Inline JS) ---
-        
         const modal = document.getElementById('modalOverlay');
         const btnCancel = document.getElementById('btn-cancel');
         const btnSubmit = document.getElementById('btn-submit');
         
-        // 1. Kliknięcie w mapę otwiera modal
+        // Wykrywanie kliknięcia na mapie
         map.on('click', (e) => {
             tempCoords = e.latlng;
             document.getElementById('event-line').value = '';
@@ -248,13 +247,13 @@
             modal.style.display = 'flex';
         });
 
-        // 2. Anulowanie
+        // Zamknięcie formularza
         btnCancel.addEventListener('click', () => {
             modal.style.display = 'none';
             tempCoords = null;
         });
 
-        // 3. Zapis do Firebase (Zabezpieczony przed double-clickiem)
+        // Wysłanie danych do Twojego Firebase
         btnSubmit.addEventListener('click', () => {
             if (!tempCoords) return;
 
@@ -276,7 +275,7 @@
                 type: type,
                 line: line,
                 location: location,
-                confirms: 1, // Autor potwierdza
+                confirms: 1,
                 denies: 0,
                 time: time
             };
@@ -284,11 +283,11 @@
             set(newReportRef, newReport).then(() => {
                 localStorage.setItem(`vote_${reportId}`, 'up');
                 modal.style.display = 'none';
-                showToast("📍 Dodano nowe zgłoszenie na mapę!");
-                map.panTo([tempCoords.lat - 0.005, tempCoords.lng]); // Wyśrodkowanie z marginesem na panel
+                showToast("📍 Dodano nowe utrudnienie!");
+                map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
             }).catch(error => {
                 console.error("Błąd zapisu Firebase:", error);
-                showToast("❌ Błąd! Sprawdź reguły bazy (Rules).");
+                showToast("❌ Błąd zapisu! Sprawdź reguły Rules w Firebase.");
             }).finally(() => {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = "Dodaj do radaru";
@@ -296,16 +295,16 @@
             });
         });
 
-        // --- NASŁUCHIWANIE BAZY W CZASIE RZECZYWISTYM ---
+        // Aktualizacja w czasie rzeczywistym u wszystkich użytkowników na raz
         onValue(reportsRef, (snapshot) => {
             reports = snapshot.val() || {};
             renderUI();
         }, (error) => {
             console.error("Błąd odczytu bazy:", error);
-            document.getElementById('events-list').innerHTML = '<div class="empty-state">❌ Odmowa dostępu. Ustaw reguły Firebase na true!</div>';
+            document.getElementById('events-list').innerHTML = '<div class="empty-state">❌ Odmowa dostępu. Upewnij się, że w zakładce Rules (w Realtime Database) masz ustawione true!</div>';
         });
 
-        // --- GŁOSOWANIE (Globalna funkcja podpięta pod obiekt window dla wygody markerów Leaflet) ---
+        // Obsługa weryfikacji zgłoszeń (Upvote/Downvote)
         window.handleVote = function(e, id, voteType) {
             e.preventDefault();
             e.stopPropagation();
@@ -319,7 +318,6 @@
             let newConfirms = report.confirms || 0;
             let newDenies = report.denies || 0;
 
-            // Algorytm przełączania głosu
             if (previousVote === voteType) {
                 if (voteType === 'up') newConfirms--;
                 if (voteType === 'down') newDenies--;
@@ -332,7 +330,7 @@
                 localStorage.setItem(storageKey, voteType);
             }
 
-            // Automatyczne usuwanie fałszywych (np. różnica głosów >= 3)
+            // Jeśli zgłoszenie jest fałszywe (bilans ujemny o 3 punkty) -> usuń z chmury
             if (newDenies - newConfirms >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
@@ -343,12 +341,12 @@
             }
         };
 
-        // --- RENDEROWANIE INTERFEJSU I PINEZEK ---
+        // Rysowanie UI oraz synchronizacja pinezek na mapie
         function renderUI() {
             const listContainer = document.getElementById('events-list');
             listContainer.innerHTML = '';
 
-            // 1. Czyszczenie usuniętych markerów
+            // Wyczyszczenie starych markerów
             for (let id in leafletMarkers) {
                 if (!reports[id]) {
                     map.removeLayer(leafletMarkers[id]);
@@ -359,11 +357,11 @@
             const reportsArray = Object.values(reports);
             
             if (reportsArray.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">✅ Droga czysta. Brak utrudnień z bazy danych.</div>';
+                listContainer.innerHTML = '<div class="empty-state">✅ Wszystkie drogi czyste. Brak aktywnych utrudnień.</div>';
                 return;
             }
 
-            // Sortowanie: Najpierw te z najwyższym bilansem pozytywnym
+            // Sortowanie: Najbardziej wiarygodne na samej górze panelu
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
@@ -372,11 +370,11 @@
                 const userVote = localStorage.getItem(`vote_${report.id}`);
                 const isPositive = score >= 0;
 
-                // --- Generowanie listy w panelu boczny/dolnym ---
+                // Dodawanie karty do wysuwanego panelu
                 const card = document.createElement('div');
                 card.className = 'event-card';
                 card.onclick = () => {
-                    map.setView([report.lat - 0.005, report.lng], 15);
+                    map.setView([report.lat - 0.003, report.lng], 15);
                     if (leafletMarkers[report.id]) leafletMarkers[report.id].openPopup();
                 };
                 
@@ -387,29 +385,29 @@
                     </div>
                     <div class="card-location">📍 ${report.location}</div>
                     <div class="card-score ${isPositive ? 'score-positive' : 'score-negative'}">
-                        ${isPositive ? '👍' : '👎'} Bilans: ${score}
+                        ${isPositive ? '👍' : '👎'} Wiarygodność: ${score} pkt
                     </div>
                 `;
                 listContainer.appendChild(card);
 
-                // --- Generowanie Markera i Dymka (Popup) ---
                 const activeUpClass = userVote === 'up' ? 'active-up' : '';
                 const activeDownClass = userVote === 'down' ? 'active-down' : '';
 
+                // Konstruowanie dymka (Popupu) nad markerem
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
                         ${config.label} - Linia ${report.line}
                     </div>
                     <div class="popup-body">
-                        <strong>📍 Przystanek:</strong> ${report.location}<br>
-                        <strong>🕒 Dodano:</strong> ${report.time}<br>
+                        <strong>📍 Miejsce:</strong> ${report.location}<br>
+                        <strong>🕒 Godzina:</strong> ${report.time}<br>
                     </div>
                     <div class="popup-actions">
                         <button type="button" class="vote-btn ${activeUpClass}" onmousedown="handleVote(event, '${report.id}', 'up')" ontouchstart="handleVote(event, '${report.id}', 'up')">
                             👍 Potwierdzam
                         </button>
                         <button type="button" class="vote-btn ${activeDownClass}" onmousedown="handleVote(event, '${report.id}', 'down')" ontouchstart="handleVote(event, '${report.id}', 'down')">
-                            👎 Ściema / Brak
+                            👎 Nie ma / Ściema
                         </button>
                     </div>
                 `;
