@@ -10,126 +10,150 @@
 
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
             --danger: #ef4444;
             --success: #10b981;
-            --bg-glass: rgba(255, 255, 255, 0.92);
-            --text-dark: #0f172a;
+            --bg-glass: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
             --text-muted: #64748b;
+            --radius-lg: 24px;
         }
 
         * { box-sizing: border-box; touch-action: manipulation; margin: 0; padding: 0; }
         
         body, html {
             width: 100vw; height: 100dvh; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; background-color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden; background-color: #f8fafc;
         }
 
         /* MAPA */
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; }
+        
+        /* KURSOR DODAWANIA */
+        .map-crosshair { cursor: crosshair !important; }
 
         /* PANEL GŁÓWNY (UI) */
         #ui-panel {
-            position: absolute; bottom: 0; left: 0; width: 100vw; height: 42dvh;
-            background: var(--bg-glass); backdrop-filter: blur(12px);
-            border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.12);
-            z-index: 1000; display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute; bottom: 0; left: 0; width: 100vw; height: 35dvh;
+            background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0; 
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+            z-index: 1000; display: flex; flex-direction: column;
+            border-top: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .panel-drag-handle {
+            width: 40px; height: 4px; background: #cbd5e1;
+            border-radius: 4px; margin: 12px auto 8px;
         }
 
         .panel-header {
-            padding: 20px; background: var(--primary); color: white;
-            border-radius: 28px 28px 0 0; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #e2e8f0;
         }
-        .panel-header h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .panel-header .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-
-        .instruction-banner {
-            background: #eff6ff; color: var(--primary-dark); font-size: 0.85rem; font-weight: 500;
-            padding: 12px 20px; text-align: center; border-bottom: 1px solid #dbeafe;
-        }
+        
+        .panel-header h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
+        .panel-header .badge { background: #e0e7ff; color: var(--primary-dark); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
         #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
-        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 30px 20px; }
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; font-weight: 500; }
+
+        /* FAB (Floating Action Button) */
+        #fab-add {
+            position: absolute; bottom: calc(35dvh + 20px); right: 20px;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--primary); color: white;
+            border: none; font-size: 24px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            z-index: 1001; cursor: pointer; transition: transform 0.2s, background 0.2s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #fab-add:active { transform: scale(0.92); }
+        
+        /* BANER INSTRUKCYJNY */
+        #instruction-banner {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--text-dark); color: white; padding: 12px 24px;
+            border-radius: 30px; font-weight: 600; font-size: 0.9rem;
+            z-index: 1001; opacity: 0; transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); pointer-events: none;
+        }
+        #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
 
         /* KARTY ZDARZEŃ */
         .event-card {
-            background: white; border: 1px solid #e2e8f0; border-radius: 16px;
-            padding: 16px; margin-bottom: 12px; cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s;
+            background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;
+            transition: transform 0.15s, border-color 0.15s;
         }
-        .event-card:active { transform: scale(0.98); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .card-title { font-weight: 700; font-size: 1rem; }
+        .event-card:active { transform: scale(0.98); background: #f8fafc; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .card-title { font-weight: 800; font-size: 0.95rem; }
         .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-        .card-location { font-size: 0.875rem; color: var(--text-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; }
+        .card-location { font-size: 0.85rem; color: var(--text-dark); margin-bottom: 10px; }
+        .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; padding: 4px 10px; border-radius: 8px; }
         .score-positive { background: #dcfce7; color: #166534; }
         .score-negative { background: #fee2e2; color: #991b1b; }
 
-        /* MODAL (Dodawanie zdarzenia) */
+        /* MODAL */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            z-index: 2000; justify-content: center; align-items: center; padding: 16px;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+            z-index: 2000; justify-content: center; align-items: flex-end; padding: 0;
         }
         .modal-content {
-            background: white; width: 100%; max-width: 420px; border-radius: 24px;
-            padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-            animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: white; width: 100%; max-width: 500px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes modalSlideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--text-dark); margin-bottom: 20px; text-align: center; }
+        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; }
         .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         .input-group input, .input-group select {
-            width: 100%; padding: 14px; border: 1.5px solid #cbd5e1; border-radius: 12px;
-            font-size: 16px; background: #f8fafc; color: var(--text-dark); transition: border-color 0.2s;
+            width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; background: #f8fafc; font-weight: 500; transition: all 0.2s;
         }
         .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: white; }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
-        .btn:active { opacity: 0.8; }
+        .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
         .btn-cancel { background: #f1f5f9; color: var(--text-muted); }
-        .btn-submit { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .btn-submit { background: var(--primary); color: white; }
 
-        /* MARKERY I DYMKI NA MAPIE */
+        /* MARKERY I DYMKI */
         .map-marker {
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%; background: white; border: 3px solid white;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.3); color: white; font-size: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25); color: white; font-size: 18px;
         }
-        .leaflet-popup-content-wrapper { border-radius: 16px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0; min-width: 240px; }
-        
-        .popup-header { padding: 12px 16px; font-weight: 700; font-size: 15px; color: white; }
+        .leaflet-popup-content-wrapper { border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .leaflet-popup-content { margin: 0; min-width: 220px; }
+        .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; }
         .popup-body { padding: 12px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.5; }
-        .popup-actions { display: flex; padding: 12px 16px; gap: 10px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .popup-actions { display: flex; padding: 10px; gap: 8px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
         .vote-btn {
-            flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: 700; font-size: 12px;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            background: white; border: 1px solid #cbd5e1; color: var(--text-dark); cursor: pointer;
+            flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 12px;
+            background: white; border: 1px solid #cbd5e1; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
         }
         .vote-btn.active-up { background: var(--success); color: white; border-color: var(--success); }
         .vote-btn.active-down { background: var(--danger); color: white; border-color: var(--danger); }
 
-        /* SYSTEM POWIADOMIEŃ (TOAST) */
+        /* TOAST */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast {
-            background: #1e293b; color: white; padding: 12px 24px; border-radius: 50px;
-            font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0;
-        }
+        .toast { background: #1e293b; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; }
         @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
         @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
 
-        /* RESPONSIVE DESKTOP */
+        /* DESKTOP */
         @media (min-width: 768px) {
-            #ui-panel { width: 400px; height: 100dvh; border-radius: 0; border-right: 1px solid rgba(0,0,0,0.1); }
-            .panel-header { border-radius: 0; }
+            #ui-panel { width: 400px; height: 100dvh; border-radius: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.05); }
+            .panel-drag-handle { display: none; }
+            .modal-content { border-radius: 24px; margin-bottom: 50px; }
+            .modal-overlay { align-items: center; }
+            #fab-add { bottom: 30px; right: calc(100vw - 430px); } /* Obok panelu */
             L.control.zoom { display: block; }
         }
     </style>
@@ -138,21 +162,24 @@
 
     <div id="map"></div>
     <div id="toast-container"></div>
+    
+    <div id="instruction-banner">📍 Kliknij na mapie miejsce zdarzenia</div>
+    <button id="fab-add">➕</button>
 
     <div id="ui-panel">
+        <div class="panel-drag-handle"></div>
         <div class="panel-header">
             <h1>🚌 MZK Radar</h1>
-            <span class="badge">Gorzów & Okolice</span>
+            <span class="badge">Gorzów Wlkp.</span>
         </div>
-        <div class="instruction-banner">📍 Kliknij w dowolne miejsce na mapie, by dodać zgłoszenie</div>
         <div id="events-list">
-            <div class="empty-state">Ładowanie danych z chmury...</div>
+            <div class="empty-state">Ładowanie danych...</div>
         </div>
     </div>
 
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal-content">
-            <h2 class="modal-title">Nowe Zgłoszenie</h2>
+            <h2 class="modal-title">Dodaj Zgłoszenie</h2>
             
             <div class="input-group">
                 <label>Rodzaj zdarzenia</label>
@@ -165,12 +192,12 @@
             </div>
             
             <div class="input-group">
-                <label>Linia (np. 104, 126, T1)</label>
-                <input type="text" id="event-line" placeholder="Wpisz numer linii..." autocomplete="off">
+                <label>Linia</label>
+                <input type="text" id="event-line" placeholder="np. 104, 126, T1" autocomplete="off">
             </div>
             
             <div class="input-group">
-                <label>Przystanek / Kierunek</label>
+                <label>Lokalizacja</label>
                 <input type="text" id="event-location" placeholder="np. Kłodawa Szkoła..." autocomplete="off">
             </div>
 
@@ -185,7 +212,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Zaktualizowana, pełna konfiguracja z Twoim adresem URL chmury
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
@@ -196,25 +222,23 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
-        // Typy zdarzeń z kolorami
         const EVENT_CONFIG = {
             kanar: { label: '🎫 Kanar', color: '#ef4444' },
             awaria: { label: '🛠️ Awaria', color: '#7f1d1d' },
             opoznienie: { label: '⏳ Opóźnienie', color: '#f59e0b' },
-            inne: { label: '⚠️ Inne', color: '#2563eb' }
+            inne: { label: '⚠️ Inne', color: '#3b82f6' }
         };
 
         let db, reportsRef;
         let reports = {};
         let leafletMarkers = {};
         let tempCoords = null;
+        let isAddingMode = false;
 
-        // Inicjalizacja Mapy (centrowanie na Gorzów)
         const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
         L.control.zoom({ position: 'topright' }).addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-        // Funkcja Powiadomień (Toast)
         function showToast(message) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -224,39 +248,58 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        // Inicjalizacja Firebase
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
             reportsRef = ref(db, 'reports');
-            showToast("✅ Połączono z radarem w chmurze");
         } catch (error) {
-            console.error("Błąd Firebase:", error);
             showToast("❌ Błąd połączenia z siecią!");
         }
 
         const modal = document.getElementById('modalOverlay');
-        const btnCancel = document.getElementById('btn-cancel');
-        const btnSubmit = document.getElementById('btn-submit');
-        
-        // Wykrywanie kliknięcia na mapie
+        const fabAdd = document.getElementById('fab-add');
+        const banner = document.getElementById('instruction-banner');
+
+        // TRYB DODAWANIA
+        fabAdd.addEventListener('click', () => {
+            isAddingMode = !isAddingMode;
+            if (isAddingMode) {
+                document.getElementById('map').classList.add('map-crosshair');
+                banner.classList.add('active');
+                fabAdd.style.background = 'var(--danger)';
+                fabAdd.textContent = '✖';
+            } else {
+                exitAddingMode();
+            }
+        });
+
+        function exitAddingMode() {
+            isAddingMode = false;
+            document.getElementById('map').classList.remove('map-crosshair');
+            banner.classList.remove('active');
+            fabAdd.style.background = 'var(--primary)';
+            fabAdd.textContent = '➕';
+        }
+
         map.on('click', (e) => {
+            if (!isAddingMode) return;
+            
             tempCoords = e.latlng;
             document.getElementById('event-line').value = '';
             document.getElementById('event-location').value = '';
             modal.style.display = 'flex';
+            exitAddingMode();
         });
 
-        // Zamknięcie formularza
-        btnCancel.addEventListener('click', () => {
+        document.getElementById('btn-cancel').addEventListener('click', () => {
             modal.style.display = 'none';
             tempCoords = null;
         });
 
-        // Wysłanie danych do Twojego Firebase
-        btnSubmit.addEventListener('click', () => {
+        document.getElementById('btn-submit').addEventListener('click', () => {
             if (!tempCoords) return;
 
+            const btnSubmit = document.getElementById('btn-submit');
             const type = document.getElementById('event-type').value;
             const line = document.getElementById('event-line').value.trim() || 'Nieznana';
             const location = document.getElementById('event-location').value.trim() || 'Brak danych';
@@ -266,28 +309,18 @@
             btnSubmit.textContent = "Wysyłanie...";
 
             const newReportRef = push(reportsRef);
-            const reportId = newReportRef.key;
-
-            const newReport = {
-                id: reportId,
-                lat: tempCoords.lat,
-                lng: tempCoords.lng,
-                type: type,
-                line: line,
-                location: location,
-                confirms: 1,
-                denies: 0,
-                time: time
-            };
-
-            set(newReportRef, newReport).then(() => {
-                localStorage.setItem(`vote_${reportId}`, 'up');
+            
+            set(newReportRef, {
+                id: newReportRef.key,
+                lat: tempCoords.lat, lng: tempCoords.lng,
+                type, line, location, time, confirms: 1, denies: 0
+            }).then(() => {
+                localStorage.setItem(`vote_${newReportRef.key}`, 'up');
                 modal.style.display = 'none';
                 showToast("📍 Dodano nowe utrudnienie!");
                 map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
-            }).catch(error => {
-                console.error("Błąd zapisu Firebase:", error);
-                showToast("❌ Błąd zapisu! Sprawdź reguły Rules w Firebase.");
+            }).catch(() => {
+                showToast("❌ Błąd zapisu!");
             }).finally(() => {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = "Dodaj do radaru";
@@ -295,21 +328,20 @@
             });
         });
 
-        // Aktualizacja w czasie rzeczywistym u wszystkich użytkowników na raz
         onValue(reportsRef, (snapshot) => {
             reports = snapshot.val() || {};
             renderUI();
-        }, (error) => {
-            console.error("Błąd odczytu bazy:", error);
-            document.getElementById('events-list').innerHTML = '<div class="empty-state">❌ Odmowa dostępu. Upewnij się, że w zakładce Rules (w Realtime Database) masz ustawione true!</div>';
         });
 
-        // Obsługa weryfikacji zgłoszeń (Upvote/Downvote)
-        window.handleVote = function(e, id, voteType) {
-            e.preventDefault();
-            e.stopPropagation();
-
+        // GLOBALNA OBSŁUGA GŁOSOWANIA (Zamiast onmousedown w HTML)
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.vote-btn');
+            if (!btn) return;
+            
+            const id = btn.dataset.id;
+            const voteType = btn.dataset.vote;
             const report = reports[id];
+            
             if (!report) return;
 
             const storageKey = `vote_${id}`;
@@ -330,7 +362,6 @@
                 localStorage.setItem(storageKey, voteType);
             }
 
-            // Jeśli zgłoszenie jest fałszywe (bilans ujemny o 3 punkty) -> usuń z chmury
             if (newDenies - newConfirms >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
@@ -339,14 +370,12 @@
             } else {
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies });
             }
-        };
+        });
 
-        // Rysowanie UI oraz synchronizacja pinezek na mapie
         function renderUI() {
             const listContainer = document.getElementById('events-list');
             listContainer.innerHTML = '';
 
-            // Wyczyszczenie starych markerów
             for (let id in leafletMarkers) {
                 if (!reports[id]) {
                     map.removeLayer(leafletMarkers[id]);
@@ -355,13 +384,11 @@
             }
 
             const reportsArray = Object.values(reports);
-            
             if (reportsArray.length === 0) {
                 listContainer.innerHTML = '<div class="empty-state">✅ Wszystkie drogi czyste. Brak aktywnych utrudnień.</div>';
                 return;
             }
 
-            // Sortowanie: Najbardziej wiarygodne na samej górze panelu
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
@@ -370,7 +397,6 @@
                 const userVote = localStorage.getItem(`vote_${report.id}`);
                 const isPositive = score >= 0;
 
-                // Dodawanie karty do wysuwanego panelu
                 const card = document.createElement('div');
                 card.className = 'event-card';
                 card.onclick = () => {
@@ -390,10 +416,6 @@
                 `;
                 listContainer.appendChild(card);
 
-                const activeUpClass = userVote === 'up' ? 'active-up' : '';
-                const activeDownClass = userVote === 'down' ? 'active-down' : '';
-
-                // Konstruowanie dymka (Popupu) nad markerem
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
                         ${config.label} - Linia ${report.line}
@@ -403,21 +425,17 @@
                         <strong>🕒 Godzina:</strong> ${report.time}<br>
                     </div>
                     <div class="popup-actions">
-                        <button type="button" class="vote-btn ${activeUpClass}" onmousedown="handleVote(event, '${report.id}', 'up')" ontouchstart="handleVote(event, '${report.id}', 'up')">
-                            👍 Potwierdzam
-                        </button>
-                        <button type="button" class="vote-btn ${activeDownClass}" onmousedown="handleVote(event, '${report.id}', 'down')" ontouchstart="handleVote(event, '${report.id}', 'down')">
-                            👎 Nie ma / Ściema
-                        </button>
+                        <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up">👍 Potwierdzam</button>
+                        <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down">👎 Ściema</button>
                     </div>
                 `;
 
                 const customIcon = L.divIcon({
                     className: 'map-marker',
                     html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">${config.label.split(' ')[0]}</div>`,
-                    iconSize: [44, 44],
-                    iconAnchor: [22, 22],
-                    popupAnchor: [0, -20]
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -18]
                 });
 
                 if (leafletMarkers[report.id]) {
