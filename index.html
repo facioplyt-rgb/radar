@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów</title>
+    <title>MZK Radar Gorzów - PRO (Dark & Icons)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0" rel="stylesheet" />
+
     <style>
         :root {
-            /* Nowe zmienne dla Dark Mode */
             --primary: #3b82f6;
             --primary-dark: #2563eb;
             --danger: #ef4444;
             --success: #10b981;
-            --bg-glass: rgba(15, 23, 42, 0.85); /* Ciemne szkło */
-            --text-dark: #f8fafc; /* Jasny tekst główny */
-            --text-muted: #94a3b8; /* Przygaszony jasny tekst */
+            --bg-glass: rgba(15, 23, 42, 0.85);
+            --text-dark: #f8fafc;
+            --text-muted: #94a3b8;
             --radius-lg: 24px;
         }
 
@@ -26,14 +27,18 @@
         body, html {
             width: 100vw; height: 100dvh; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden; background-color: #0f172a; /* Ciemne tło strony */
+            overflow: hidden; background-color: #0f172a; 
             color: var(--text-dark);
         }
 
+        /* Użyteczne klasy dla ikon Material */
+        .icon-sm { font-size: 16px !important; vertical-align: text-bottom; }
+        .icon-md { font-size: 20px !important; vertical-align: middle; }
+        .icon-lg { font-size: 24px !important; vertical-align: middle; }
+        .icon-text-gap { display: inline-flex; align-items: center; gap: 6px; }
+
         /* MAPA */
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #0f172a; }
-        
-        /* KURSOR DODAWANIA */
         .map-crosshair { cursor: crosshair !important; }
 
         /* PANEL GŁÓWNY (UI) */
@@ -60,14 +65,14 @@
         .panel-header .badge { background: #1e3a8a; color: #93c5fd; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
         #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
-        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; font-weight: 500; }
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
         /* FAB (Floating Action Button) */
         #fab-add {
             position: absolute; bottom: calc(35dvh + 20px); right: 20px;
             width: 56px; height: 56px; border-radius: 50%;
             background: var(--primary); color: white;
-            border: none; font-size: 24px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            border: none; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
             z-index: 1001; cursor: pointer; transition: transform 0.2s, background 0.2s;
             display: flex; justify-content: center; align-items: center;
         }
@@ -76,10 +81,11 @@
         /* BANER INSTRUKCYJNY */
         #instruction-banner {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: #1e293b; color: white; padding: 12px 24px;
+            background: #1e293b; color: white; padding: 10px 20px;
             border-radius: 30px; font-weight: 600; font-size: 0.9rem; border: 1px solid #334155;
             z-index: 1001; opacity: 0; transition: all 0.3s ease;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); pointer-events: none;
+            display: flex; align-items: center; gap: 8px; white-space: nowrap;
         }
         #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
 
@@ -90,13 +96,12 @@
             transition: transform 0.15s, background-color 0.15s;
         }
         .event-card:active { transform: scale(0.98); background: #0f172a; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .card-title { font-weight: 800; font-size: 0.95rem; }
         .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-        .card-location { font-size: 0.85rem; color: var(--text-dark); margin-bottom: 10px; }
+        .card-location { font-size: 0.85rem; color: var(--text-dark); margin-bottom: 12px; }
         
-        /* Punkty dopasowane do Dark Mode */
-        .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; padding: 4px 10px; border-radius: 8px; }
+        .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; padding: 6px 12px; border-radius: 8px; }
         .score-positive { background: rgba(16, 185, 129, 0.2); color: #34d399; }
         .score-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
@@ -117,7 +122,6 @@
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* Pola formularza w Dark Mode */
         .input-group input, .input-group select {
             width: 100%; padding: 14px; border: 2px solid #334155; border-radius: 12px;
             font-size: 1rem; background: #0f172a; color: var(--text-dark); font-weight: 500; transition: all 0.2s;
@@ -133,20 +137,21 @@
         .map-marker {
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%; background: #1e293b; border: 3px solid #1e293b;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white; font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white;
         }
         
-        /* Ciemne popupy Leaflet */
         .leaflet-popup-content-wrapper { background: #1e293b; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        .leaflet-popup-content { margin: 0; min-width: 220px; }
-        .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; } /* Trójkącik dymka */
+        .leaflet-popup-content { margin: 0; min-width: 240px; }
+        .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; }
         
-        .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; }
-        .popup-body { padding: 12px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.5; }
+        .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; display: flex; align-items: center; gap: 6px; }
+        .popup-body { padding: 14px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.6; }
         .popup-actions { display: flex; padding: 10px; gap: 8px; background: #0f172a; border-top: 1px solid #334155; }
+        
         .vote-btn {
             flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 12px;
             background: #1e293b; border: 1px solid #475569; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
         }
         .vote-btn:active { background: #334155; }
         .vote-btn.active-up { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #059669; }
@@ -154,7 +159,7 @@
 
         /* TOAST */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; border: 1px solid rgba(255,255,255,0.2); }
+        .toast { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
         @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
 
@@ -174,17 +179,25 @@
     <div id="map"></div>
     <div id="toast-container"></div>
     
-    <div id="instruction-banner">📍 Kliknij na mapie miejsce zdarzenia</div>
-    <button id="fab-add">➕</button>
+    <div id="instruction-banner">
+        <span class="material-symbols-outlined icon-md">location_on</span> Kliknij na mapie miejsce zdarzenia
+    </div>
+    
+    <button id="fab-add">
+        <span class="material-symbols-outlined icon-lg" id="fab-icon">add</span>
+    </button>
 
     <div id="ui-panel">
         <div class="panel-drag-handle"></div>
         <div class="panel-header">
-            <h1>🚌 MZK Radar</h1>
+            <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> MZK Radar</h1>
             <span class="badge">Gorzów Wlkp.</span>
         </div>
         <div id="events-list">
-            <div class="empty-state">Ładowanie danych...</div>
+            <div class="empty-state">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--text-muted);">sync</span>
+                Ładowanie danych...
+            </div>
         </div>
     </div>
 
@@ -195,10 +208,10 @@
             <div class="input-group">
                 <label>Rodzaj zdarzenia</label>
                 <select id="event-type">
-                    <option value="kanar">🎫 Kontrola biletów (Kanar)</option>
-                    <option value="awaria">🛠️ Awaria pojazdu</option>
-                    <option value="opoznienie">⏳ Opóźnienie / Korek</option>
-                    <option value="inne">⚠️ Inne utrudnienie</option>
+                    <option value="kanar">Kontrola biletów (Kanar)</option>
+                    <option value="awaria">Awaria pojazdu</option>
+                    <option value="opoznienie">Opóźnienie / Korek</option>
+                    <option value="inne">Inne utrudnienie</option>
                 </select>
             </div>
             
@@ -233,11 +246,12 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
+        // Konfiguracja ikon Material Symbols (nazwa ikony = właściwość 'icon')
         const EVENT_CONFIG = {
-            kanar: { label: '🎫 Kanar', color: '#ef4444' },
-            awaria: { label: '🛠️ Awaria', color: '#991b1b' }, /* Przyciemniona czerwień */
-            opoznienie: { label: '⏳ Opóźnienie', color: '#d97706' }, /* Przyciemniony pomarańcz */
-            inne: { label: '⚠️ Inne', color: '#3b82f6' }
+            kanar: { label: 'Kanar', color: '#ef4444', icon: 'confirmation_number' },
+            awaria: { label: 'Awaria', color: '#991b1b', icon: 'build' },
+            opoznienie: { label: 'Opóźnienie', color: '#d97706', icon: 'schedule' },
+            inne: { label: 'Inne', color: '#3b82f6', icon: 'warning' }
         };
 
         let db, reportsRef;
@@ -249,17 +263,19 @@
         const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
         L.control.zoom({ position: 'topright' }).addTo(map);
         
-        /* CIEMNE KAFELKI MAPY (CartoDB Dark Matter) */
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
 
-        function showToast(message) {
+        function showToast(icon, message, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = message;
+            if(isError) toast.style.background = 'var(--danger)';
+            
+            toast.innerHTML = `<span class="material-symbols-outlined icon-md">${icon}</span> ${message}`;
+            
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
@@ -269,11 +285,12 @@
             db = getDatabase(app);
             reportsRef = ref(db, 'reports');
         } catch (error) {
-            showToast("❌ Błąd połączenia z siecią!");
+            showToast("wifi_off", "Błąd połączenia z siecią!", true);
         }
 
         const modal = document.getElementById('modalOverlay');
         const fabAdd = document.getElementById('fab-add');
+        const fabIcon = document.getElementById('fab-icon');
         const banner = document.getElementById('instruction-banner');
 
         // TRYB DODAWANIA
@@ -283,7 +300,7 @@
                 document.getElementById('map').classList.add('map-crosshair');
                 banner.classList.add('active');
                 fabAdd.style.background = 'var(--danger)';
-                fabAdd.textContent = '✖';
+                fabIcon.textContent = 'close';
             } else {
                 exitAddingMode();
             }
@@ -294,7 +311,7 @@
             document.getElementById('map').classList.remove('map-crosshair');
             banner.classList.remove('active');
             fabAdd.style.background = 'var(--primary)';
-            fabAdd.textContent = '➕';
+            fabIcon.textContent = 'add';
         }
 
         map.on('click', (e) => {
@@ -333,10 +350,10 @@
             }).then(() => {
                 localStorage.setItem(`vote_${newReportRef.key}`, 'up');
                 modal.style.display = 'none';
-                showToast("📍 Dodano nowe utrudnienie!");
+                showToast("add_location_alt", "Dodano nowe utrudnienie!");
                 map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
             }).catch(() => {
-                showToast("❌ Błąd zapisu!");
+                showToast("error", "Błąd zapisu w chmurze!", true);
             }).finally(() => {
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = "Dodaj do radaru";
@@ -381,7 +398,7 @@
             if (newDenies - newConfirms >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
-                    showToast("🗑️ Usunięto nieaktualne zgłoszenie");
+                    showToast("delete", "Usunięto nieaktualne zgłoszenie");
                 });
             } else {
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies });
@@ -401,7 +418,11 @@
 
             const reportsArray = Object.values(reports);
             if (reportsArray.length === 0) {
-                listContainer.innerHTML = '<div class="empty-state">✅ Wszystkie drogi czyste. Brak aktywnych utrudnień.</div>';
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 48px; color: var(--success); margin-bottom: 8px;">check_circle</span>
+                        Wszystkie drogi czyste. Brak utrudnień.
+                    </div>`;
                 return;
             }
 
@@ -422,37 +443,57 @@
                 
                 card.innerHTML = `
                     <div class="card-header">
-                        <span class="card-title" style="color: ${config.color}">${config.label} (${report.line})</span>
+                        <span class="card-title icon-text-gap" style="color: ${config.color}">
+                            <span class="material-symbols-outlined icon-md">${config.icon}</span> 
+                            ${config.label} (${report.line})
+                        </span>
                         <span class="card-time">${report.time}</span>
                     </div>
-                    <div class="card-location">📍 ${report.location}</div>
-                    <div class="card-score ${isPositive ? 'score-positive' : 'score-negative'}">
-                        ${isPositive ? '👍' : '👎'} Wiarygodność: ${score} pkt
+                    <div class="card-location icon-text-gap">
+                        <span class="material-symbols-outlined icon-sm">location_on</span> 
+                        ${report.location}
+                    </div>
+                    <div class="card-score icon-text-gap ${isPositive ? 'score-positive' : 'score-negative'}">
+                        <span class="material-symbols-outlined icon-sm">${isPositive ? 'thumb_up' : 'thumb_down'}</span> 
+                        Wiarygodność: ${score} pkt
                     </div>
                 `;
                 listContainer.appendChild(card);
 
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
+                        <span class="material-symbols-outlined icon-sm">${config.icon}</span>
                         ${config.label} - Linia ${report.line}
                     </div>
                     <div class="popup-body">
-                        <strong>📍 Miejsce:</strong> ${report.location}<br>
-                        <strong>🕒 Godzina:</strong> ${report.time}<br>
+                        <div class="icon-text-gap" style="margin-bottom: 4px;">
+                            <span class="material-symbols-outlined icon-sm">location_on</span> 
+                            <strong>Miejsce:</strong> ${report.location}
+                        </div>
+                        <div class="icon-text-gap">
+                            <span class="material-symbols-outlined icon-sm">schedule</span> 
+                            <strong>Godzina:</strong> ${report.time}
+                        </div>
                     </div>
                     <div class="popup-actions">
-                        <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up">👍 Potwierdzam</button>
-                        <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down">👎 Ściema</button>
+                        <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up">
+                            <span class="material-symbols-outlined icon-sm">thumb_up</span> Potwierdzam
+                        </button>
+                        <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down">
+                            <span class="material-symbols-outlined icon-sm">thumb_down</span> Ściema
+                        </button>
                     </div>
                 `;
 
-                // Znaczniki na mapie również otrzymały ciemną otoczkę z palety Dark Mode
+                // Znacznik z odpowiednią ikonką Material Symbols
                 const customIcon = L.divIcon({
                     className: 'map-marker',
-                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 3px #1e293b;">${config.label.split(' ')[0]}</div>`,
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20],
-                    popupAnchor: [0, -18]
+                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 3px #1e293b;">
+                               <span class="material-symbols-outlined icon-md">${config.icon}</span>
+                           </div>`,
+                    iconSize: [42, 42],
+                    iconAnchor: [21, 21],
+                    popupAnchor: [0, -19]
                 });
 
                 if (leafletMarkers[report.id]) {
