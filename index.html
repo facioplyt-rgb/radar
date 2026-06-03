@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów - PRO</title>
+    <title>MZK Radar Gorzów - PRO (Dark)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         :root {
+            /* Nowe zmienne dla Dark Mode */
             --primary: #3b82f6;
             --primary-dark: #2563eb;
             --danger: #ef4444;
             --success: #10b981;
-            --bg-glass: rgba(255, 255, 255, 0.85);
-            --text-dark: #1e293b;
-            --text-muted: #64748b;
+            --bg-glass: rgba(15, 23, 42, 0.85); /* Ciemne szkło */
+            --text-dark: #f8fafc; /* Jasny tekst główny */
+            --text-muted: #94a3b8; /* Przygaszony jasny tekst */
             --radius-lg: 24px;
         }
 
@@ -25,11 +26,12 @@
         body, html {
             width: 100vw; height: 100dvh; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden; background-color: #f8fafc;
+            overflow: hidden; background-color: #0f172a; /* Ciemne tło strony */
+            color: var(--text-dark);
         }
 
         /* MAPA */
-        #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; }
+        #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #0f172a; }
         
         /* KURSOR DODAWANIA */
         .map-crosshair { cursor: crosshair !important; }
@@ -39,23 +41,23 @@
             position: absolute; bottom: 0; left: 0; width: 100vw; height: 35dvh;
             background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border-radius: var(--radius-lg) var(--radius-lg) 0 0; 
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
             z-index: 1000; display: flex; flex-direction: column;
-            border-top: 1px solid rgba(255,255,255,0.5);
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
         .panel-drag-handle {
-            width: 40px; height: 4px; background: #cbd5e1;
+            width: 40px; height: 4px; background: #475569;
             border-radius: 4px; margin: 12px auto 8px;
         }
 
         .panel-header {
             padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #1e293b;
         }
         
         .panel-header h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
-        .panel-header .badge { background: #e0e7ff; color: var(--primary-dark); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .panel-header .badge { background: #1e3a8a; color: #93c5fd; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
         #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
         .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; font-weight: 500; }
@@ -65,7 +67,7 @@
             position: absolute; bottom: calc(35dvh + 20px); right: 20px;
             width: 56px; height: 56px; border-radius: 50%;
             background: var(--primary); color: white;
-            border: none; font-size: 24px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            border: none; font-size: 24px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
             z-index: 1001; cursor: pointer; transition: transform 0.2s, background 0.2s;
             display: flex; justify-content: center; align-items: center;
         }
@@ -74,86 +76,95 @@
         /* BANER INSTRUKCYJNY */
         #instruction-banner {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: var(--text-dark); color: white; padding: 12px 24px;
-            border-radius: 30px; font-weight: 600; font-size: 0.9rem;
+            background: #1e293b; color: white; padding: 12px 24px;
+            border-radius: 30px; font-weight: 600; font-size: 0.9rem; border: 1px solid #334155;
             z-index: 1001; opacity: 0; transition: all 0.3s ease;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); pointer-events: none;
         }
         #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
 
         /* KARTY ZDARZEŃ */
         .event-card {
-            background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px;
-            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;
-            transition: transform 0.15s, border-color 0.15s;
+            background: #1e293b; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #334155;
+            transition: transform 0.15s, background-color 0.15s;
         }
-        .event-card:active { transform: scale(0.98); background: #f8fafc; }
+        .event-card:active { transform: scale(0.98); background: #0f172a; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .card-title { font-weight: 800; font-size: 0.95rem; }
         .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
         .card-location { font-size: 0.85rem; color: var(--text-dark); margin-bottom: 10px; }
+        
+        /* Punkty dopasowane do Dark Mode */
         .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; padding: 4px 10px; border-radius: 8px; }
-        .score-positive { background: #dcfce7; color: #166534; }
-        .score-negative { background: #fee2e2; color: #991b1b; }
+        .score-positive { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .score-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
         /* MODAL */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
             z-index: 2000; justify-content: center; align-items: flex-end; padding: 0;
         }
         .modal-content {
-            background: white; width: 100%; max-width: 500px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            background: #1e293b; width: 100%; max-width: 500px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); border-top: 1px solid #334155;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; }
+        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; color: var(--text-dark); }
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Pola formularza w Dark Mode */
         .input-group input, .input-group select {
-            width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px;
-            font-size: 1rem; background: #f8fafc; font-weight: 500; transition: all 0.2s;
+            width: 100%; padding: 14px; border: 2px solid #334155; border-radius: 12px;
+            font-size: 1rem; background: #0f172a; color: var(--text-dark); font-weight: 500; transition: all 0.2s;
         }
-        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: white; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: #1e293b; }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
         .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
-        .btn-cancel { background: #f1f5f9; color: var(--text-muted); }
+        .btn-cancel { background: #334155; color: var(--text-dark); }
         .btn-submit { background: var(--primary); color: white; }
 
         /* MARKERY I DYMKI */
         .map-marker {
             display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: white; border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25); color: white; font-size: 18px;
+            border-radius: 50%; background: #1e293b; border: 3px solid #1e293b;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white; font-size: 18px;
         }
-        .leaflet-popup-content-wrapper { border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        
+        /* Ciemne popupy Leaflet */
+        .leaflet-popup-content-wrapper { background: #1e293b; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
         .leaflet-popup-content { margin: 0; min-width: 220px; }
+        .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; } /* Trójkącik dymka */
+        
         .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; }
         .popup-body { padding: 12px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.5; }
-        .popup-actions { display: flex; padding: 10px; gap: 8px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .popup-actions { display: flex; padding: 10px; gap: 8px; background: #0f172a; border-top: 1px solid #334155; }
         .vote-btn {
             flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 12px;
-            background: white; border: 1px solid #cbd5e1; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
+            background: #1e293b; border: 1px solid #475569; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
         }
-        .vote-btn.active-up { background: var(--success); color: white; border-color: var(--success); }
-        .vote-btn.active-down { background: var(--danger); color: white; border-color: var(--danger); }
+        .vote-btn:active { background: #334155; }
+        .vote-btn.active-up { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #059669; }
+        .vote-btn.active-down { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #dc2626; }
 
         /* TOAST */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #1e293b; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; }
+        .toast { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; border: 1px solid rgba(255,255,255,0.2); }
         @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
         @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
 
         /* DESKTOP */
         @media (min-width: 768px) {
-            #ui-panel { width: 400px; height: 100dvh; border-radius: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.05); }
+            #ui-panel { width: 400px; height: 100dvh; border-radius: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.3); border-right: 1px solid #334155; border-top: none; }
             .panel-drag-handle { display: none; }
-            .modal-content { border-radius: 24px; margin-bottom: 50px; }
+            .modal-content { border-radius: 24px; margin-bottom: 50px; border: 1px solid #334155; }
             .modal-overlay { align-items: center; }
-            #fab-add { bottom: 30px; right: calc(100vw - 430px); } /* Obok panelu */
+            #fab-add { bottom: 30px; right: calc(100vw - 430px); } 
             L.control.zoom { display: block; }
         }
     </style>
@@ -224,8 +235,8 @@
 
         const EVENT_CONFIG = {
             kanar: { label: '🎫 Kanar', color: '#ef4444' },
-            awaria: { label: '🛠️ Awaria', color: '#7f1d1d' },
-            opoznienie: { label: '⏳ Opóźnienie', color: '#f59e0b' },
+            awaria: { label: '🛠️ Awaria', color: '#991b1b' }, /* Przyciemniona czerwień */
+            opoznienie: { label: '⏳ Opóźnienie', color: '#d97706' }, /* Przyciemniony pomarańcz */
             inne: { label: '⚠️ Inne', color: '#3b82f6' }
         };
 
@@ -237,7 +248,12 @@
 
         const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
         L.control.zoom({ position: 'topright' }).addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        
+        /* CIEMNE KAFELKI MAPY (CartoDB Dark Matter) */
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
 
         function showToast(message) {
             const container = document.getElementById('toast-container');
@@ -333,7 +349,7 @@
             renderUI();
         });
 
-        // GLOBALNA OBSŁUGA GŁOSOWANIA (Zamiast onmousedown w HTML)
+        // GLOBALNA OBSŁUGA GŁOSOWANIA
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.vote-btn');
             if (!btn) return;
@@ -430,9 +446,10 @@
                     </div>
                 `;
 
+                // Znaczniki na mapie również otrzymały ciemną otoczkę z palety Dark Mode
                 const customIcon = L.divIcon({
                     className: 'map-marker',
-                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">${config.label.split(' ')[0]}</div>`,
+                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 3px #1e293b;">${config.label.split(' ')[0]}</div>`,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20],
                     popupAnchor: [0, -18]
