@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów</title>
+    <title>MZK Radar Gorzów - PRO (Ochrona, Czas & Wybór Miasta)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -115,7 +114,6 @@
         }
         .event-card:active { transform: scale(0.98); background: #0f172a; }
         
-        /* KLASY DLA ZGŁOSZEŃ STARSZYCH NIŻ 15 MIN */
         .event-card.faded { opacity: 0.5; filter: grayscale(40%); }
         .map-marker.faded { opacity: 0.5; filter: grayscale(60%); }
 
@@ -154,8 +152,11 @@
         .input-group input.error { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; }
+        
+        /* Zablokowany przycisk */
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; background: #334155 !important; color: #94a3b8 !important; box-shadow: none !important; }
+        
         .btn-cancel { background: #334155; color: var(--text-dark); }
         .btn-submit { background: var(--primary); color: white; }
 
@@ -207,10 +208,10 @@
     <div id="city-selector-overlay">
         <div class="city-card">
             <h1><span class="material-symbols-outlined icon-lg" style="color: var(--primary);">radar</span> MZK Radar</h1>
-            <p>Wybierz miasto które ciebie interesuje, aby kontynuować</p>
+            <p>Wybierz miasto, aby kontynuować</p>
             <div class="city-list">
                 <button class="city-btn active" id="btn-select-gorzow">
-                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">location_city</span>MZK Gorzów</span>
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">location_city</span> Gorzów Wlkp. (i okolice)</span>
                     <span class="material-symbols-outlined icon-md">chevron_right</span>
                 </button>
                 <button class="city-btn disabled">
@@ -271,13 +272,13 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Lokalizacja <span style="color:var(--danger)">*</span></label>
-                    <input type="text" id="event-location" placeholder="np. Kłodawa Szkoła..." autocomplete="off" maxlength="40">
+                    <label>Kierunek <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="event-direction" placeholder="np. Dekerta Szpital..." autocomplete="off" maxlength="40">
                 </div>
 
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-cancel" id="btn-cancel">Anuluj</button>
-                    <button type="button" class="btn btn-submit" id="btn-submit">Zgłoś utrudnienie</button>
+                    <button type="button" class="btn btn-submit" id="btn-submit" disabled>Zgłoś utrudnienie</button>
                 </div>
             </div>
         </div>
@@ -309,9 +310,8 @@
             [52.8200, 15.4200] 
         );
 
-        // Ustawienia czasowe w milisekundach
-        const FADE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minut do blaknięcia
-        const DELETE_THRESHOLD_MS = 25 * 60 * 1000; // 25 minut do usunięcia
+        const FADE_THRESHOLD_MS = 15 * 60 * 1000;
+        const DELETE_THRESHOLD_MS = 25 * 60 * 1000;
 
         let db, reportsRef;
         let reports = {};
@@ -364,7 +364,6 @@
                     renderUI();
                 });
                 
-                // Automatyczne odświeżanie UI co 30 sekund (żeby nakładać blaknięcie bez odświeżania strony)
                 setInterval(() => {
                     if(Object.keys(reports).length > 0) renderUI();
                 }, 30000);
@@ -380,8 +379,27 @@
         const fabAdd = document.getElementById('fab-add');
         const fabIcon = document.getElementById('fab-icon');
         const banner = document.getElementById('instruction-banner');
+        
         const inputLine = document.getElementById('event-line');
-        const inputLoc = document.getElementById('event-location');
+        const inputDir = document.getElementById('event-direction');
+        const btnSubmit = document.getElementById('btn-submit');
+
+        // FUNKCJA: Dynamiczna walidacja formularza na żywo
+        function validateFormLive() {
+            const line = inputLine.value.trim();
+            const direction = inputDir.value.trim();
+            
+            // Wymagania: linia min. 1 znak, kierunek min. 3 znaki
+            if (line.length >= 1 && direction.length >= 3) {
+                btnSubmit.disabled = false;
+            } else {
+                btnSubmit.disabled = true;
+            }
+        }
+
+        // Podpięcie walidacji pod wpisywanie z klawiatury
+        inputLine.addEventListener('input', validateFormLive);
+        inputDir.addEventListener('input', validateFormLive);
 
         function setupMapEvents() {
             fabAdd.addEventListener('click', () => {
@@ -400,16 +418,20 @@
                 if (!isAddingMode) return;
                 
                 if (!ALLOWED_BOUNDS.contains(e.latlng)) {
-                    showToast("block", "Zgłoszenia obsługiwane tylko na terenie Gorzowa i przyległych gmin!", true);
+                    showToast("block", "Zgłoszenia obsługiwane tylko na terenie Gorzowa i okolic!", true);
                     exitAddingMode();
                     return;
                 }
                 
                 tempCoords = e.latlng;
+                
+                // Czyszczenie formularza i ponowne zablokowanie przycisku
                 inputLine.value = '';
                 inputLine.classList.remove('error');
-                inputLoc.value = '';
-                inputLoc.classList.remove('error');
+                inputDir.value = '';
+                inputDir.classList.remove('error');
+                btnSubmit.disabled = true; 
+                
                 modal.style.display = 'flex';
                 exitAddingMode();
             });
@@ -428,21 +450,33 @@
             tempCoords = null;
         });
 
-        // WYSYŁANIE ZGŁOSZENIA Z OZNACZENIEM CZASU TIMESTAMP
-        document.getElementById('btn-submit').addEventListener('click', () => {
+        // WYSYŁANIE ZGŁOSZENIA Z DODATKOWĄ TWARDĄ WALIDACJĄ (Anty-Bypass)
+        btnSubmit.addEventListener('click', () => {
             if (!tempCoords) return;
 
-            const btnSubmit = document.getElementById('btn-submit');
             const type = document.getElementById('event-type').value;
             const line = inputLine.value.trim();
-            const location = inputLoc.value.trim();
+            const direction = inputDir.value.trim();
             
             let isValid = true;
-            if(!line) { inputLine.classList.add('error'); isValid = false; } else { inputLine.classList.remove('error'); }
-            if(!location) { inputLoc.classList.add('error'); isValid = false; } else { inputLoc.classList.remove('error'); }
+            
+            if(line.length < 1) { 
+                inputLine.classList.add('error'); 
+                isValid = false; 
+            } else { 
+                inputLine.classList.remove('error'); 
+            }
+            
+            if(direction.length < 3) { 
+                inputDir.classList.add('error'); 
+                isValid = false; 
+            } else { 
+                inputDir.classList.remove('error'); 
+            }
             
             if(!isValid) {
-                showToast("warning", "Wypełnij wymagane pola (Linia i Lokalizacja)!", true);
+                showToast("warning", "Wypełnij poprawnie wszystkie pola!", true);
+                btnSubmit.disabled = true; // Zabezpieczenie
                 return;
             }
 
@@ -457,9 +491,10 @@
             set(newReportRef, {
                 id: newReportRef.key,
                 lat: tempCoords.lat, lng: tempCoords.lng,
-                type, line, location, 
+                type, line, 
+                location: direction, // Używamy kierunku jako lokalizacji
                 time: timeStr, 
-                lastConfirmed: nowTimestamp, // Czas utworzenia służy jako pierwsze potwierdzenie
+                lastConfirmed: nowTimestamp,
                 confirms: 1, denies: 0
             }).then(() => {
                 localStorage.setItem(`vote_${newReportRef.key}`, 'up');
@@ -469,8 +504,8 @@
             }).catch(() => {
                 showToast("error", "Błąd zapisu w chmurze!", true);
             }).finally(() => {
-                btnSubmit.disabled = false;
                 btnSubmit.textContent = "Zgłoś utrudnienie";
+                // Zostawiamy disabled=true, bo po zamknięciu formularz jest czyszczony
                 tempCoords = null;
             });
         });
@@ -503,7 +538,7 @@
                 if (previousVote === 'down') newDenies--;
                 if (voteType === 'up') {
                     newConfirms++;
-                    updatedLastConfirmed = Date.now(); // Jeśli ktoś daje kciuka w górę, odnawiamy licznik czasu!
+                    updatedLastConfirmed = Date.now();
                 }
                 if (voteType === 'down') newDenies++;
                 localStorage.setItem(storageKey, voteType);
@@ -550,21 +585,17 @@
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
-                // LOGIKA CZASOWA (GARBAGE COLLECTOR & BLAKNIĘCIE)
                 const lastConfTime = report.lastConfirmed || now;
                 const ageMs = now - lastConfTime;
                 
-                // Usuwanie wpisu starszego niż 25 minut
                 if (ageMs > DELETE_THRESHOLD_MS) {
                     remove(ref(db, `reports/${report.id}`));
-                    return; // Przerywamy rysowanie tego usuniętego wpisu
+                    return; 
                 }
                 
-                // Sprawdzanie czy ma być wyblakłe
                 const isFaded = ageMs > FADE_THRESHOLD_MS;
                 const fadeClass = isFaded ? 'faded' : '';
                 
-                // Formatowanie czasu potwierdzenia
                 const lastConfDate = new Date(lastConfTime);
                 const lastConfStr = lastConfDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
                 const timeStatusClass = isFaded ? 'old' : 'fresh';
@@ -594,8 +625,8 @@
                         </div>
                     </div>
                     <div class="card-location icon-text-gap">
-                        <span class="material-symbols-outlined icon-sm">location_on</span> 
-                        ${report.location}
+                        <span class="material-symbols-outlined icon-sm">signpost</span> 
+                        Kierunek: ${report.location}
                     </div>
                     <div class="card-score icon-text-gap ${isPositive ? 'score-positive' : 'score-negative'}">
                         <span class="material-symbols-outlined icon-sm">${isPositive ? 'thumb_up' : 'thumb_down'}</span> 
@@ -614,8 +645,8 @@
                     </div>
                     <div class="popup-body">
                         <div class="icon-text-gap" style="margin-bottom: 4px;">
-                            <span class="material-symbols-outlined icon-sm">location_on</span> 
-                            <strong>Miejsce:</strong> ${report.location}
+                            <span class="material-symbols-outlined icon-sm">signpost</span> 
+                            <strong>Kierunek:</strong> ${report.location}
                         </div>
                         <div class="icon-text-gap">
                             <span class="material-symbols-outlined icon-sm">history</span> 
@@ -644,7 +675,7 @@
 
                 if (leafletMarkers[report.id]) {
                     leafletMarkers[report.id].setPopupContent(popupHtml);
-                    leafletMarkers[report.id].setIcon(customIcon); // Aktualizuje ikonkę jeśli wyblakła
+                    leafletMarkers[report.id].setIcon(customIcon);
                 } else {
                     const marker = L.marker([report.lat, report.lng], { icon: customIcon })
                         .addTo(map)
