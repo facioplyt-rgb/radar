@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów</title>
+    <title>MZK Radar Gorzów - PRO (Ochrona, Czas & Wybór Miasta)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -111,12 +110,19 @@
         .event-card {
             background: #1e293b; border-radius: 16px; padding: 16px; margin-bottom: 12px;
             cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #334155;
-            transition: transform 0.15s, background-color 0.15s;
+            transition: all 0.3s;
         }
         .event-card:active { transform: scale(0.98); background: #0f172a; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        
+        /* KLASY DLA ZGŁOSZEŃ STARSZYCH NIŻ 15 MIN */
+        .event-card.faded { opacity: 0.5; filter: grayscale(40%); }
+        .map-marker.faded { opacity: 0.5; filter: grayscale(60%); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
         .card-title { font-weight: 800; font-size: 0.95rem; }
-        .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-align: right; }
+        .card-time .fresh { color: #34d399; font-weight: 700; }
+        .card-time .old { color: #f87171; }
         .card-location { font-size: 0.85rem; color: var(--text-dark); margin-bottom: 12px; }
         
         .card-score { font-size: 0.75rem; font-weight: 700; display: inline-flex; padding: 6px 12px; border-radius: 8px; }
@@ -156,13 +162,14 @@
         .map-marker {
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%; background: #1e293b; border: 3px solid #1e293b;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white; transition: all 0.3s;
         }
         .leaflet-popup-content-wrapper { background: #1e293b; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        .leaflet-popup-content { margin: 0; min-width: 250px; }
+        .leaflet-popup-content { margin: 0; min-width: 260px; }
         .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; }
         
-        .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; display: flex; align-items: center; gap: 6px; }
+        .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; display: flex; align-items: center; gap: 6px; justify-content: space-between;}
+        .popup-header .time-badge { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 8px; font-size: 11px; }
         .popup-body { padding: 14px 16px; font-size: 13px; color: var(--text-dark); line-height: 1.6; }
         .popup-actions { display: flex; padding: 10px; gap: 8px; background: #0f172a; border-top: 1px solid #334155; }
         
@@ -176,7 +183,6 @@
         .vote-btn.active-up { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #059669; }
         .vote-btn.active-down { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #dc2626; }
         
-        /* Licznik w przycisku Ściema */
         .deny-counter { font-size: 11px; opacity: 0.8; }
 
         /* TOAST */
@@ -280,7 +286,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Konfiguracja
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
@@ -298,12 +303,14 @@
             inne: { label: 'Inne', color: '#3b82f6', icon: 'warning' }
         };
 
-        // GEOFENCING: Granice operacyjne dla Gorzowa i wymienionych wiosek
-        // Od północy (Lubno/Stanowice), południa (Zakanale), wschodu (Wawrów/Różanki), zachodu (Baczyna/Racław)
         const ALLOWED_BOUNDS = L.latLngBounds(
-            [52.6500, 15.0000], // Południowy Zachód (odcina m.in. Niemcy)
-            [52.8200, 15.4200]  // Północny Wschód
+            [52.6500, 15.0000],
+            [52.8200, 15.4200] 
         );
+
+        // Ustawienia czasowe w milisekundach
+        const FADE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minut do blaknięcia
+        const DELETE_THRESHOLD_MS = 25 * 60 * 1000; // 25 minut do usunięcia
 
         let db, reportsRef;
         let reports = {};
@@ -322,7 +329,6 @@
             setTimeout(() => toast.remove(), 4000);
         }
 
-        // --- INICJALIZACJA APLIKACJI (Po wybraniu miasta) ---
         document.getElementById('btn-select-gorzow').addEventListener('click', () => {
             document.getElementById('city-selector-overlay').style.opacity = '0';
             setTimeout(() => {
@@ -333,10 +339,9 @@
         });
 
         function initRadar() {
-            // Blokada przewijania mapy poza Gorzów
             map = L.map('map', { 
                 zoomControl: false,
-                maxBounds: ALLOWED_BOUNDS, // Twardy limit przewijania mapy
+                maxBounds: ALLOWED_BOUNDS,
                 maxBoundsViscosity: 1.0,
                 minZoom: 11
             }).setView([52.7367, 15.2288], 13);
@@ -348,7 +353,6 @@
                 attribution: '&copy; OpenStreetMap &copy; CARTO'
             }).addTo(map);
 
-            // Połączenie z bazą dopiero po wyborze miasta
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getDatabase(app);
@@ -358,6 +362,12 @@
                     reports = snapshot.val() || {};
                     renderUI();
                 });
+                
+                // Automatyczne odświeżanie UI co 30 sekund (żeby nakładać blaknięcie bez odświeżania strony)
+                setInterval(() => {
+                    if(Object.keys(reports).length > 0) renderUI();
+                }, 30000);
+
             } catch (error) {
                 showToast("wifi_off", "Błąd połączenia z siecią!", true);
             }
@@ -365,7 +375,6 @@
             setupMapEvents();
         }
 
-        // --- OBSŁUGA UI I MAPY ---
         const modal = document.getElementById('modalOverlay');
         const fabAdd = document.getElementById('fab-add');
         const fabIcon = document.getElementById('fab-icon');
@@ -389,7 +398,6 @@
             map.on('click', (e) => {
                 if (!isAddingMode) return;
                 
-                // GEOFENCING Zabezpieczenie na kliknięcie
                 if (!ALLOWED_BOUNDS.contains(e.latlng)) {
                     showToast("block", "Zgłoszenia obsługiwane tylko na terenie Gorzowa i przyległych gmin!", true);
                     exitAddingMode();
@@ -419,7 +427,7 @@
             tempCoords = null;
         });
 
-        // WYSYŁANIE ZGŁOSZENIA Z WALIDACJĄ
+        // WYSYŁANIE ZGŁOSZENIA Z OZNACZENIEM CZASU TIMESTAMP
         document.getElementById('btn-submit').addEventListener('click', () => {
             if (!tempCoords) return;
 
@@ -428,7 +436,6 @@
             const line = inputLine.value.trim();
             const location = inputLoc.value.trim();
             
-            // Walidacja pustych pól (Anty-Bug)
             let isValid = true;
             if(!line) { inputLine.classList.add('error'); isValid = false; } else { inputLine.classList.remove('error'); }
             if(!location) { inputLoc.classList.add('error'); isValid = false; } else { inputLoc.classList.remove('error'); }
@@ -438,7 +445,8 @@
                 return;
             }
 
-            const time = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+            const nowTimestamp = Date.now();
+            const timeStr = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 
             btnSubmit.disabled = true;
             btnSubmit.textContent = "Wysyłanie...";
@@ -448,7 +456,10 @@
             set(newReportRef, {
                 id: newReportRef.key,
                 lat: tempCoords.lat, lng: tempCoords.lng,
-                type, line, location, time, confirms: 1, denies: 0
+                type, line, location, 
+                time: timeStr, 
+                lastConfirmed: nowTimestamp, // Czas utworzenia służy jako pierwsze potwierdzenie
+                confirms: 1, denies: 0
             }).then(() => {
                 localStorage.setItem(`vote_${newReportRef.key}`, 'up');
                 modal.style.display = 'none';
@@ -463,7 +474,6 @@
             });
         });
 
-        // GLOBALNA OBSŁUGA GŁOSOWANIA & USUWANIA (Anty-spam)
         let isVoting = false;
         
         document.addEventListener('click', (e) => {
@@ -475,12 +485,13 @@
             const report = reports[id];
             if (!report) return;
 
-            isVoting = true; // Blokada antyspamowa na ułamek sekundy
+            isVoting = true;
             const storageKey = `vote_${id}`;
             const previousVote = localStorage.getItem(storageKey);
 
             let newConfirms = report.confirms || 0;
             let newDenies = report.denies || 0;
+            let updatedLastConfirmed = report.lastConfirmed || Date.now();
 
             if (previousVote === voteType) {
                 if (voteType === 'up') newConfirms--;
@@ -489,26 +500,34 @@
             } else {
                 if (previousVote === 'up') newConfirms--;
                 if (previousVote === 'down') newDenies--;
-                if (voteType === 'up') newConfirms++;
+                if (voteType === 'up') {
+                    newConfirms++;
+                    updatedLastConfirmed = Date.now(); // Jeśli ktoś daje kciuka w górę, odnawiamy licznik czasu!
+                }
                 if (voteType === 'down') newDenies++;
                 localStorage.setItem(storageKey, voteType);
             }
 
-            // GŁÓWNA ZMIANA: Dokładnie 3 zgłoszenia 'ściema' automatycznie usuwają marker
             if (newDenies >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
                     showToast("delete", "Zgłoszenie usunięte przez społeczność (3 odrzucenia)");
                 }).finally(() => { isVoting = false; });
             } else {
-                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies })
-                .finally(() => { isVoting = false; });
+                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastConfirmed: updatedLastConfirmed })
+                .then(() => {
+                    if (voteType === 'up' && previousVote !== 'up') {
+                        showToast("update", "Czas życia zgłoszenia został przedłużony!");
+                    }
+                }).finally(() => { isVoting = false; });
             }
         });
 
         function renderUI() {
             const listContainer = document.getElementById('events-list');
             listContainer.innerHTML = '';
+            
+            const now = Date.now();
 
             for (let id in leafletMarkers) {
                 if (!reports[id]) {
@@ -527,18 +546,36 @@
                 return;
             }
 
-            // Sortowanie po najwyższej wiarygodności
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
+                // LOGIKA CZASOWA (GARBAGE COLLECTOR & BLAKNIĘCIE)
+                const lastConfTime = report.lastConfirmed || now;
+                const ageMs = now - lastConfTime;
+                
+                // Usuwanie wpisu starszego niż 25 minut
+                if (ageMs > DELETE_THRESHOLD_MS) {
+                    remove(ref(db, `reports/${report.id}`));
+                    return; // Przerywamy rysowanie tego usuniętego wpisu
+                }
+                
+                // Sprawdzanie czy ma być wyblakłe
+                const isFaded = ageMs > FADE_THRESHOLD_MS;
+                const fadeClass = isFaded ? 'faded' : '';
+                
+                // Formatowanie czasu potwierdzenia
+                const lastConfDate = new Date(lastConfTime);
+                const lastConfStr = lastConfDate.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                const timeStatusClass = isFaded ? 'old' : 'fresh';
+
                 const config = EVENT_CONFIG[report.type];
                 const score = (report.confirms || 0) - (report.denies || 0);
                 const userVote = localStorage.getItem(`vote_${report.id}`);
                 const isPositive = score >= 0;
-                const deniesCount = report.denies || 0; // Licznik do 'ściemy'
+                const deniesCount = report.denies || 0;
 
                 const card = document.createElement('div');
-                card.className = 'event-card';
+                card.className = `event-card ${fadeClass}`;
                 card.onclick = () => {
                     map.setView([report.lat - 0.003, report.lng], 15);
                     if (leafletMarkers[report.id]) leafletMarkers[report.id].openPopup();
@@ -550,7 +587,10 @@
                             <span class="material-symbols-outlined icon-md">${config.icon}</span> 
                             ${config.label} (${report.line})
                         </span>
-                        <span class="card-time">${report.time}</span>
+                        <div class="card-time">
+                            Dodano: ${report.time}<br>
+                            <span class="${timeStatusClass}">Widziano: ${lastConfStr}</span>
+                        </div>
                     </div>
                     <div class="card-location icon-text-gap">
                         <span class="material-symbols-outlined icon-sm">location_on</span> 
@@ -563,11 +603,13 @@
                 `;
                 listContainer.appendChild(card);
 
-                // Dymek z Licznikiem (X/3)
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
-                        <span class="material-symbols-outlined icon-sm">${config.icon}</span>
-                        ${config.label} - Linia ${report.line}
+                        <span class="icon-text-gap">
+                            <span class="material-symbols-outlined icon-sm">${config.icon}</span>
+                            ${config.label} (${report.line})
+                        </span>
+                        <span class="time-badge">Widziano: ${lastConfStr}</span>
                     </div>
                     <div class="popup-body">
                         <div class="icon-text-gap" style="margin-bottom: 4px;">
@@ -575,13 +617,13 @@
                             <strong>Miejsce:</strong> ${report.location}
                         </div>
                         <div class="icon-text-gap">
-                            <span class="material-symbols-outlined icon-sm">schedule</span> 
-                            <strong>Godzina:</strong> ${report.time}
+                            <span class="material-symbols-outlined icon-sm">history</span> 
+                            <strong>Początek:</strong> ${report.time}
                         </div>
                     </div>
                     <div class="popup-actions">
                         <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up">
-                            <span class="material-symbols-outlined icon-sm">thumb_up</span> Potwierdź
+                            <span class="material-symbols-outlined icon-sm">thumb_up</span> Nadal tu jest
                         </button>
                         <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down">
                             <span class="material-symbols-outlined icon-sm">thumb_down</span> Ściema <span class="deny-counter">(${deniesCount}/3)</span>
@@ -590,7 +632,7 @@
                 `;
 
                 const customIcon = L.divIcon({
-                    className: 'map-marker',
+                    className: `map-marker ${fadeClass}`,
                     html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 3px #1e293b;">
                                <span class="material-symbols-outlined icon-md">${config.icon}</span>
                            </div>`,
@@ -601,6 +643,7 @@
 
                 if (leafletMarkers[report.id]) {
                     leafletMarkers[report.id].setPopupContent(popupHtml);
+                    leafletMarkers[report.id].setIcon(customIcon); // Aktualizuje ikonkę jeśli wyblakła
                 } else {
                     const marker = L.marker([report.lat, report.lng], { icon: customIcon })
                         .addTo(map)
