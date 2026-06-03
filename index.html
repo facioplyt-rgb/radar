@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MZK Radar Gorzów</title>
+    <title>MZK Radar Gorzów - PRO (Ochrona & Wybór Miasta)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,6 +15,7 @@
             --primary: #3b82f6;
             --primary-dark: #2563eb;
             --danger: #ef4444;
+            --danger-dark: #b91c1c;
             --success: #10b981;
             --bg-glass: rgba(15, 23, 42, 0.85);
             --text-dark: #f8fafc;
@@ -32,11 +32,34 @@
             color: var(--text-dark);
         }
 
-        /* Użyteczne klasy dla ikon Material */
         .icon-sm { font-size: 16px !important; vertical-align: text-bottom; }
         .icon-md { font-size: 20px !important; vertical-align: middle; }
         .icon-lg { font-size: 24px !important; vertical-align: middle; }
         .icon-text-gap { display: inline-flex; align-items: center; gap: 6px; }
+
+        /* EKRAN STARTOWY (WYBÓR MIASTA) */
+        #city-selector-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+            background: #0f172a; z-index: 9999; display: flex; justify-content: center; align-items: center;
+            padding: 20px; transition: opacity 0.4s ease;
+        }
+        .city-card {
+            background: #1e293b; width: 100%; max-width: 450px; border-radius: 24px;
+            padding: 30px 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #334155;
+            text-align: center;
+        }
+        .city-card h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .city-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
+        .city-list { display: flex; flex-direction: column; gap: 12px; }
+        .city-btn {
+            background: #0f172a; border: 2px solid #334155; color: var(--text-dark);
+            padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;
+        }
+        .city-btn.active { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .city-btn.active:hover { background: rgba(59, 130, 246, 0.2); }
+        .city-btn.disabled { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
+        .city-btn.disabled .badge { background: #334155; color: #94a3b8; }
 
         /* MAPA */
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #0f172a; }
@@ -52,23 +75,16 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .panel-drag-handle {
-            width: 40px; height: 4px; background: #475569;
-            border-radius: 4px; margin: 12px auto 8px;
-        }
+        .panel-drag-handle { width: 40px; height: 4px; background: #475569; border-radius: 4px; margin: 12px auto 8px; }
 
-        .panel-header {
-            padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #1e293b;
-        }
-        
+        .panel-header { padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
         .panel-header h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: #1e3a8a; color: #93c5fd; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
         #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
         .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
-        /* FAB (Floating Action Button) */
+        /* FAB */
         #fab-add {
             position: absolute; bottom: calc(35dvh + 20px); right: 20px;
             width: 56px; height: 56px; border-radius: 50%;
@@ -106,7 +122,7 @@
         .score-positive { background: rgba(16, 185, 129, 0.2); color: #34d399; }
         .score-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-        /* MODAL */
+        /* MODAL ZGŁOSZENIA */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
@@ -119,18 +135,19 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; color: var(--text-dark); }
+        .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; color: var(--text-dark); text-align: center; }
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
         .input-group input, .input-group select {
             width: 100%; padding: 14px; border: 2px solid #334155; border-radius: 12px;
             font-size: 1rem; background: #0f172a; color: var(--text-dark); font-weight: 500; transition: all 0.2s;
         }
         .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: #1e293b; }
+        .input-group input.error { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
         .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-cancel { background: #334155; color: var(--text-dark); }
         .btn-submit { background: var(--primary); color: white; }
 
@@ -140,9 +157,8 @@
             border-radius: 50%; background: #1e293b; border: 3px solid #1e293b;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5); color: white;
         }
-        
         .leaflet-popup-content-wrapper { background: #1e293b; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        .leaflet-popup-content { margin: 0; min-width: 240px; }
+        .leaflet-popup-content { margin: 0; min-width: 250px; }
         .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; }
         
         .popup-header { padding: 12px 16px; font-weight: 800; font-size: 14px; color: white; display: flex; align-items: center; gap: 6px; }
@@ -154,17 +170,20 @@
             background: #1e293b; border: 1px solid #475569; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 4px;
         }
-        .vote-btn:active { background: #334155; }
+        .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .vote-btn:active:not(:disabled) { background: #334155; }
         .vote-btn.active-up { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #059669; }
         .vote-btn.active-down { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #dc2626; }
+        
+        /* Licznik w przycisku Ściema */
+        .deny-counter { font-size: 11px; opacity: 0.8; }
 
         /* TOAST */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 2.7s; opacity: 0; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .toast { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: toastEnter 0.3s forwards, toastLeave 0.3s forwards 3.5s; opacity: 0; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
         @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
 
-        /* DESKTOP */
         @media (min-width: 768px) {
             #ui-panel { width: 400px; height: 100dvh; border-radius: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.3); border-right: 1px solid #334155; border-top: none; }
             .panel-drag-handle { display: none; }
@@ -177,58 +196,81 @@
 </head>
 <body>
 
-    <div id="map"></div>
-    <div id="toast-container"></div>
-    
-    <div id="instruction-banner">
-        <span class="material-symbols-outlined icon-md">location_on</span> Kliknij na mapie miejsce zdarzenia
-    </div>
-    
-    <button id="fab-add">
-        <span class="material-symbols-outlined icon-lg" id="fab-icon">add</span>
-    </button>
-
-    <div id="ui-panel">
-        <div class="panel-drag-handle"></div>
-        <div class="panel-header">
-            <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> MZK Radar</h1>
-            <span class="badge">Gorzów Wlkp.</span>
-        </div>
-        <div id="events-list">
-            <div class="empty-state">
-                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--text-muted);">sync</span>
-                Ładowanie danych...
+    <div id="city-selector-overlay">
+        <div class="city-card">
+            <h1><span class="material-symbols-outlined icon-lg" style="color: var(--primary);">radar</span> MZK Radar</h1>
+            <p>Wybierz miasto, aby kontynuować</p>
+            <div class="city-list">
+                <button class="city-btn active" id="btn-select-gorzow">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">location_city</span> Gorzów Wlkp. (i okolice)</span>
+                    <span class="material-symbols-outlined icon-md">chevron_right</span>
+                </button>
+                <button class="city-btn disabled">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">map</span> Szczecin</span>
+                    <span class="badge" style="font-size:10px; padding: 4px 8px; border-radius: 12px;">Wkrótce</span>
+                </button>
+                <button class="city-btn disabled">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">map</span> Zielona Góra</span>
+                    <span class="badge" style="font-size:10px; padding: 4px 8px; border-radius: 12px;">Wkrótce</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="modalOverlay" class="modal-overlay">
-        <div class="modal-content">
-            <h2 class="modal-title">Dodaj Zgłoszenie</h2>
-            
-            <div class="input-group">
-                <label>Rodzaj zdarzenia</label>
-                <select id="event-type">
-                    <option value="kanar">Kontrola biletów (Kanar)</option>
-                    <option value="awaria">Awaria pojazdu</option>
-                    <option value="opoznienie">Opóźnienie / Korek</option>
-                    <option value="inne">Inne utrudnienie</option>
-                </select>
-            </div>
-            
-            <div class="input-group">
-                <label>Linia</label>
-                <input type="text" id="event-line" placeholder="np. 104, 126, T1" autocomplete="off">
-            </div>
-            
-            <div class="input-group">
-                <label>Lokalizacja</label>
-                <input type="text" id="event-location" placeholder="np. Kłodawa Szkoła..." autocomplete="off">
-            </div>
+    <div id="app-container" style="display: none;">
+        <div id="map"></div>
+        <div id="toast-container"></div>
+        
+        <div id="instruction-banner">
+            <span class="material-symbols-outlined icon-md">location_on</span> Kliknij na mapie miejsce zdarzenia
+        </div>
+        
+        <button id="fab-add">
+            <span class="material-symbols-outlined icon-lg" id="fab-icon">add</span>
+        </button>
 
-            <div class="modal-buttons">
-                <button type="button" class="btn btn-cancel" id="btn-cancel">Anuluj</button>
-                <button type="button" class="btn btn-submit" id="btn-submit">Dodaj do radaru</button>
+        <div id="ui-panel">
+            <div class="panel-drag-handle"></div>
+            <div class="panel-header">
+                <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> MZK Radar</h1>
+                <span class="badge">Gorzów Wlkp.</span>
+            </div>
+            <div id="events-list">
+                <div class="empty-state">
+                    <span class="material-symbols-outlined" style="font-size: 32px; color: var(--text-muted);">sync</span>
+                    Ładowanie danych...
+                </div>
+            </div>
+        </div>
+
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal-content">
+                <h2 class="modal-title">Dodaj Zgłoszenie</h2>
+                
+                <div class="input-group">
+                    <label>Rodzaj zdarzenia</label>
+                    <select id="event-type">
+                        <option value="kanar">Kontrola biletów (Kanar)</option>
+                        <option value="awaria">Awaria pojazdu</option>
+                        <option value="opoznienie">Opóźnienie / Korek</option>
+                        <option value="inne">Inne utrudnienie</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Linia <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="event-line" placeholder="np. 104, 126, T1" autocomplete="off" maxlength="10">
+                </div>
+                
+                <div class="input-group">
+                    <label>Lokalizacja <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="event-location" placeholder="np. Kłodawa Szkoła..." autocomplete="off" maxlength="40">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-cancel" id="btn-cancel">Anuluj</button>
+                    <button type="button" class="btn btn-submit" id="btn-submit">Zgłoś utrudnienie</button>
+                </div>
             </div>
         </div>
     </div>
@@ -237,6 +279,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Firebase Konfiguracja
         const firebaseConfig = {
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
@@ -247,7 +290,6 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
-        // Konfiguracja ikon Material Symbols (nazwa ikony = właściwość 'icon')
         const EVENT_CONFIG = {
             kanar: { label: 'Kanar', color: '#ef4444', icon: 'confirmation_number' },
             awaria: { label: 'Awaria', color: '#991b1b', icon: 'build' },
@@ -255,57 +297,113 @@
             inne: { label: 'Inne', color: '#3b82f6', icon: 'warning' }
         };
 
+        // GEOFENCING: Granice operacyjne dla Gorzowa i wymienionych wiosek
+        // Od północy (Lubno/Stanowice), południa (Zakanale), wschodu (Wawrów/Różanki), zachodu (Baczyna/Racław)
+        const ALLOWED_BOUNDS = L.latLngBounds(
+            [52.6500, 15.0000], // Południowy Zachód (odcina m.in. Niemcy)
+            [52.8200, 15.4200]  // Północny Wschód
+        );
+
         let db, reportsRef;
         let reports = {};
         let leafletMarkers = {};
         let tempCoords = null;
         let isAddingMode = false;
-
-        const map = L.map('map', { zoomControl: false }).setView([52.7367, 15.2288], 13);
-        L.control.zoom({ position: 'topright' }).addTo(map);
-        
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        }).addTo(map);
+        let map;
 
         function showToast(icon, message, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            if(isError) toast.style.background = 'var(--danger)';
-            
+            if(isError) toast.style.background = 'var(--danger-dark)';
             toast.innerHTML = `<span class="material-symbols-outlined icon-md">${icon}</span> ${message}`;
-            
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getDatabase(app);
-            reportsRef = ref(db, 'reports');
-        } catch (error) {
-            showToast("wifi_off", "Błąd połączenia z siecią!", true);
+        // --- INICJALIZACJA APLIKACJI (Po wybraniu miasta) ---
+        document.getElementById('btn-select-gorzow').addEventListener('click', () => {
+            document.getElementById('city-selector-overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('city-selector-overlay').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                initRadar();
+            }, 400);
+        });
+
+        function initRadar() {
+            // Blokada przewijania mapy poza Gorzów
+            map = L.map('map', { 
+                zoomControl: false,
+                maxBounds: ALLOWED_BOUNDS, // Twardy limit przewijania mapy
+                maxBoundsViscosity: 1.0,
+                minZoom: 11
+            }).setView([52.7367, 15.2288], 13);
+            
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+
+            // Połączenie z bazą dopiero po wyborze miasta
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                reportsRef = ref(db, 'reports');
+                
+                onValue(reportsRef, (snapshot) => {
+                    reports = snapshot.val() || {};
+                    renderUI();
+                });
+            } catch (error) {
+                showToast("wifi_off", "Błąd połączenia z siecią!", true);
+            }
+
+            setupMapEvents();
         }
 
+        // --- OBSŁUGA UI I MAPY ---
         const modal = document.getElementById('modalOverlay');
         const fabAdd = document.getElementById('fab-add');
         const fabIcon = document.getElementById('fab-icon');
         const banner = document.getElementById('instruction-banner');
+        const inputLine = document.getElementById('event-line');
+        const inputLoc = document.getElementById('event-location');
 
-        // TRYB DODAWANIA
-        fabAdd.addEventListener('click', () => {
-            isAddingMode = !isAddingMode;
-            if (isAddingMode) {
-                document.getElementById('map').classList.add('map-crosshair');
-                banner.classList.add('active');
-                fabAdd.style.background = 'var(--danger)';
-                fabIcon.textContent = 'close';
-            } else {
+        function setupMapEvents() {
+            fabAdd.addEventListener('click', () => {
+                isAddingMode = !isAddingMode;
+                if (isAddingMode) {
+                    document.getElementById('map').classList.add('map-crosshair');
+                    banner.classList.add('active');
+                    fabAdd.style.background = 'var(--danger)';
+                    fabIcon.textContent = 'close';
+                } else {
+                    exitAddingMode();
+                }
+            });
+
+            map.on('click', (e) => {
+                if (!isAddingMode) return;
+                
+                // GEOFENCING Zabezpieczenie na kliknięcie
+                if (!ALLOWED_BOUNDS.contains(e.latlng)) {
+                    showToast("block", "Zgłoszenia obsługiwane tylko na terenie Gorzowa i przyległych gmin!", true);
+                    exitAddingMode();
+                    return;
+                }
+                
+                tempCoords = e.latlng;
+                inputLine.value = '';
+                inputLine.classList.remove('error');
+                inputLoc.value = '';
+                inputLoc.classList.remove('error');
+                modal.style.display = 'flex';
                 exitAddingMode();
-            }
-        });
+            });
+        }
 
         function exitAddingMode() {
             isAddingMode = false;
@@ -315,28 +413,30 @@
             fabIcon.textContent = 'add';
         }
 
-        map.on('click', (e) => {
-            if (!isAddingMode) return;
-            
-            tempCoords = e.latlng;
-            document.getElementById('event-line').value = '';
-            document.getElementById('event-location').value = '';
-            modal.style.display = 'flex';
-            exitAddingMode();
-        });
-
         document.getElementById('btn-cancel').addEventListener('click', () => {
             modal.style.display = 'none';
             tempCoords = null;
         });
 
+        // WYSYŁANIE ZGŁOSZENIA Z WALIDACJĄ
         document.getElementById('btn-submit').addEventListener('click', () => {
             if (!tempCoords) return;
 
             const btnSubmit = document.getElementById('btn-submit');
             const type = document.getElementById('event-type').value;
-            const line = document.getElementById('event-line').value.trim() || 'Nieznana';
-            const location = document.getElementById('event-location').value.trim() || 'Brak danych';
+            const line = inputLine.value.trim();
+            const location = inputLoc.value.trim();
+            
+            // Walidacja pustych pól (Anty-Bug)
+            let isValid = true;
+            if(!line) { inputLine.classList.add('error'); isValid = false; } else { inputLine.classList.remove('error'); }
+            if(!location) { inputLoc.classList.add('error'); isValid = false; } else { inputLoc.classList.remove('error'); }
+            
+            if(!isValid) {
+                showToast("warning", "Wypełnij wymagane pola (Linia i Lokalizacja)!", true);
+                return;
+            }
+
             const time = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 
             btnSubmit.disabled = true;
@@ -357,27 +457,24 @@
                 showToast("error", "Błąd zapisu w chmurze!", true);
             }).finally(() => {
                 btnSubmit.disabled = false;
-                btnSubmit.textContent = "Dodaj do radaru";
+                btnSubmit.textContent = "Zgłoś utrudnienie";
                 tempCoords = null;
             });
         });
 
-        onValue(reportsRef, (snapshot) => {
-            reports = snapshot.val() || {};
-            renderUI();
-        });
-
-        // GLOBALNA OBSŁUGA GŁOSOWANIA
+        // GLOBALNA OBSŁUGA GŁOSOWANIA & USUWANIA (Anty-spam)
+        let isVoting = false;
+        
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.vote-btn');
-            if (!btn) return;
+            if (!btn || isVoting) return;
             
             const id = btn.dataset.id;
             const voteType = btn.dataset.vote;
             const report = reports[id];
-            
             if (!report) return;
 
+            isVoting = true; // Blokada antyspamowa na ułamek sekundy
             const storageKey = `vote_${id}`;
             const previousVote = localStorage.getItem(storageKey);
 
@@ -396,13 +493,15 @@
                 localStorage.setItem(storageKey, voteType);
             }
 
-            if (newDenies - newConfirms >= 3) {
+            // GŁÓWNA ZMIANA: Dokładnie 3 zgłoszenia 'ściema' automatycznie usuwają marker
+            if (newDenies >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
-                    showToast("delete", "Usunięto nieaktualne zgłoszenie");
-                });
+                    showToast("delete", "Zgłoszenie usunięte przez społeczność (3 odrzucenia)");
+                }).finally(() => { isVoting = false; });
             } else {
-                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies });
+                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies })
+                .finally(() => { isVoting = false; });
             }
         });
 
@@ -427,6 +526,7 @@
                 return;
             }
 
+            // Sortowanie po najwyższej wiarygodności
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
@@ -434,6 +534,7 @@
                 const score = (report.confirms || 0) - (report.denies || 0);
                 const userVote = localStorage.getItem(`vote_${report.id}`);
                 const isPositive = score >= 0;
+                const deniesCount = report.denies || 0; // Licznik do 'ściemy'
 
                 const card = document.createElement('div');
                 card.className = 'event-card';
@@ -461,6 +562,7 @@
                 `;
                 listContainer.appendChild(card);
 
+                // Dymek z Licznikiem (X/3)
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
                         <span class="material-symbols-outlined icon-sm">${config.icon}</span>
@@ -478,15 +580,14 @@
                     </div>
                     <div class="popup-actions">
                         <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up">
-                            <span class="material-symbols-outlined icon-sm">thumb_up</span> Potwierdzam
+                            <span class="material-symbols-outlined icon-sm">thumb_up</span> Potwierdź
                         </button>
                         <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down">
-                            <span class="material-symbols-outlined icon-sm">thumb_down</span> Ściema
+                            <span class="material-symbols-outlined icon-sm">thumb_down</span> Ściema <span class="deny-counter">(${deniesCount}/3)</span>
                         </button>
                     </div>
                 `;
 
-                // Znacznik z odpowiednią ikonką Material Symbols
                 const customIcon = L.divIcon({
                     className: 'map-marker',
                     html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 3px #1e293b;">
