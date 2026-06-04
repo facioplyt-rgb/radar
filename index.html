@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -128,7 +127,8 @@
             font-size: 1rem; background: var(--bg-panel); color: var(--text-dark); font-weight: 700;
         }
         .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
-        .input-group input.error { border-color: var(--primary); }
+        .input-group select:disabled { opacity: 0.5; background: var(--bg-solid); cursor: not-allowed; }
+        .input-group select.error { border-color: var(--primary); }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
         .btn { flex: 1; padding: 14px; border-radius: var(--radius-md); font-weight: 800; border: none; cursor: pointer; font-size: 1rem; }
@@ -246,12 +246,16 @@
                 
                 <div class="input-group">
                     <label>Linia <span style="color:var(--primary)">*</span></label>
-                    <input type="text" id="event-line" placeholder="np. 104, 126, T1" autocomplete="off" maxlength="10">
+                    <select id="event-line">
+                        <option value="" disabled selected>Wybierz linię...</option>
+                        </select>
                 </div>
                 
                 <div class="input-group">
                     <label>Kierunek <span style="color:var(--primary)">*</span></label>
-                    <input type="text" id="event-direction" placeholder="np. Dekerta Szpital" autocomplete="off" maxlength="40">
+                    <select id="event-direction" disabled>
+                        <option value="" disabled selected>Najpierw wybierz linię...</option>
+                        </select>
                 </div>
 
                 <div class="modal-buttons">
@@ -281,6 +285,54 @@
             awaria: { label: 'Awaria', color: '#7f1d1d', icon: 'build' },
             opoznienie: { label: 'Korek', color: '#d97706', icon: 'schedule' },
             inne: { label: 'Inne', color: '#1d4ed8', icon: 'warning' }
+        };
+
+        // DANE DLA LINII I KIERUNKÓW
+        const LINES_DATA = {
+            "1": ["Fieldorfa-\"Nila\"", "Wieprzyce PKP"],
+            "2": ["Piaski", "Wieprzyce PKP"],
+            "3": ["Piaski", "Fieldorfa-\"Nila\""],
+            "4": ["Fieldorfa Nila", "Dworzec Główny"],
+            "100": ["Siedlce Ujęcie Wody", "Oś. Staszica", "TPV"],
+            "101": ["Londyńska", "Śląska Pole Golfowe"],
+            "102": ["Śląska Pole Golfowe", "Dekerta-Szpital"],
+            "103": ["Słowiańska", "Strażacka", "TPV"],
+            "104": ["Bora-Komorowskiego", "TPV", "Słowiańska"],
+            "105": ["Oś. Staszica", "Cmentarz Brama II"],
+            "106": ["Odlewników", "AWF"],
+            "107": ["Drozdowa Ogrody Działkowe", "Działkowców-Pętla"],
+            "108": ["Strażacka", "Oś. Staszica"],
+            "109": ["Londyńska", "Fieldorfa-\"Nila\""],
+            "110": ["Drozdowa Ogrody Działkowe", "Oś. Staszica"],
+            "111": ["Śląska Pole Golfowe", "Cmentarz Brama II", "Chwalęcice Kościelna"],
+            "112": ["Oś. Staszica", "Łagodzin"],
+            "113": ["Wawrów Stadion", "Oś. Staszica", "TPV"],
+            "114": ["Rondo Sybiraków", "Bora-Komorowskiego"],
+            "115": ["Piaski", "Londyńska"],
+            "116": ["Strażacka", "Oś. Staszica"],
+            "117": ["AWF", "Chróścik"],
+            "119": ["Zajezdnia Kostrzyńska", "Chróścik", "Chróścik Inneko"],
+            "120": ["Odlewników", "AWF"],
+            "121": ["TPV", "Śląska Pole Golfowe"],
+            "122": ["Janice", "Czechów", "Czechów SARRIS DAM", "Oś. Staszica"],
+            "123": ["Bora-Komorowskiego", "TPV"],
+            "124": ["Oś. Staszica", "Jedwabnicza Park Handlowy", "Prefadom"],
+            "125": ["Śląska Pole Golfowe", "Dekerta-Szpital"],
+            "126": ["Oś. Staszica", "Dekerta-Szpital"],
+            "127": ["Oś. Staszica", "Łagodzin", "Kasprzaka Terminal"],
+            "128": ["Piaski", "Jedwabnicza Park nie"],
+            "130": ["Stanowice", "AWF", "Baczyna"],
+            "131": ["Stanowice", "AWF", "Baczyna"],
+            "132": ["Bora-Komorowskiego", "Cmentarz Brama II"],
+            "134": ["Dekerta-Szpital", "Strażacka"],
+            "135": ["Małyszyńska", "Dekerta-Szpital"],
+            "136": ["Małyszyńska", "Śląska Pole Golfowe"],
+            "401": ["Zajezdnia Kostrzyńska", "Śląska Pole Golfowe"],
+            "402": ["Zajezdnia Kostrzyńska", "Oś. Staszica"],
+            "510": ["Zajezdnia Kostrzyńska"],
+            "511": ["Zajezdnia Kostrzyńska"],
+            "512": ["Zajezdnia Kostrzyńska"],
+            "201": ["Jezioro Nierzym", "Londyńska"]
         };
 
         const ALLOWED_BOUNDS = L.latLngBounds([52.6500, 15.0000], [52.8200, 15.4200]);
@@ -381,6 +433,7 @@
             }
 
             setupMapEvents();
+            setupFormSelects();
         }
 
         const modal = document.getElementById('modalOverlay');
@@ -391,18 +444,53 @@
         const inputDir = document.getElementById('event-direction');
         const btnSubmit = document.getElementById('btn-submit');
 
+        // Funkcja inicjująca listy rozwijane linii i kierunków
+        function setupFormSelects() {
+            // Sortowanie linii - numeryczne
+            const sortedLines = Object.keys(LINES_DATA).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            sortedLines.forEach(line => {
+                let opt = document.createElement('option');
+                opt.value = line;
+                opt.textContent = `Linia ${line}`;
+                inputLine.appendChild(opt);
+            });
+
+            // Reagowanie na zmianę linii
+            inputLine.addEventListener('change', () => {
+                inputLine.classList.remove('error');
+                const selectedLine = inputLine.value;
+                
+                // Resetowanie listy kierunków
+                inputDir.innerHTML = '<option value="" disabled selected>Wybierz kierunek...</option>';
+                
+                if (selectedLine && LINES_DATA[selectedLine]) {
+                    inputDir.disabled = false;
+                    LINES_DATA[selectedLine].forEach(dir => {
+                        let opt = document.createElement('option');
+                        opt.value = dir;
+                        opt.textContent = dir;
+                        inputDir.appendChild(opt);
+                    });
+                } else {
+                    inputDir.disabled = true;
+                }
+                validateFormLive();
+            });
+
+            inputDir.addEventListener('change', () => {
+                inputDir.classList.remove('error');
+                validateFormLive();
+            });
+        }
+
         function validateFormLive() {
-            const line = inputLine.value.trim();
-            const direction = inputDir.value.trim();
-            if (line.length >= 1 && direction.length >= 3) {
+            if (inputLine.value && inputDir.value) {
                 btnSubmit.disabled = false;
             } else {
                 btnSubmit.disabled = true;
             }
         }
-
-        inputLine.addEventListener('input', validateFormLive);
-        inputDir.addEventListener('input', validateFormLive);
 
         function setupMapEvents() {
             fabAdd.addEventListener('click', () => {
@@ -427,9 +515,13 @@
                 }
                 
                 tempCoords = e.latlng;
+                
+                // Reset formularza po otwarciu
                 inputLine.value = ''; inputLine.classList.remove('error');
-                inputDir.value = ''; inputDir.classList.remove('error');
+                inputDir.innerHTML = '<option value="" disabled selected>Najpierw wybierz linię...</option>';
+                inputDir.disabled = true; inputDir.classList.remove('error');
                 btnSubmit.disabled = true; 
+                
                 modal.style.display = 'flex';
                 exitAddingMode();
             });
@@ -451,12 +543,12 @@
             if (!tempCoords) return;
 
             const type = document.getElementById('event-type').value;
-            const line = inputLine.value.trim();
-            const direction = inputDir.value.trim();
+            const line = inputLine.value;
+            const direction = inputDir.value;
             
             let isValid = true;
-            if(line.length < 1) { inputLine.classList.add('error'); isValid = false; }
-            if(direction.length < 3) { inputDir.classList.add('error'); isValid = false; }
+            if(!line) { inputLine.classList.add('error'); isValid = false; }
+            if(!direction) { inputDir.classList.add('error'); isValid = false; }
             if(!isValid) return;
 
             const nowTimestamp = Date.now();
