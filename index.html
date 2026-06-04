@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
     <style>
         :root {
-            /* Główny motyw czerwony */
-            --primary: #dc2626;         /* Czerwień (Red 600) */
-            --primary-dark: #b91c1c;    /* Ciemna czerwień (Red 700) */
-            --primary-light: #fee2e2;   /* Jasne czerwone tło */
-            
+            --primary: #dc2626;         
+            --primary-dark: #b91c1c;    
+            --primary-light: #fee2e2;   
             --danger: #ef4444;          
             --success: #059669;
-            
-            /* Kolory Trybu Jasnego */
-            --bg-solid: #f1f5f9;        /* Tło aplikacji (Slate 100) */
-            --bg-panel: #ffffff;        /* Tło kart i paneli (White) */
-            --border-color: #cbd5e1;    /* Ramki (Slate 300) */
-            --text-dark: #0f172a;       /* Tekst główny (Slate 900) */
-            --text-muted: #64748b;      /* Tekst poboczny (Slate 500) */
+            --bg-solid: #f1f5f9;        
+            --bg-panel: #ffffff;        
+            --border-color: #cbd5e1;    
+            --text-dark: #0f172a;       
+            --text-muted: #64748b;      
             --radius-md: 12px;
         }
 
@@ -70,7 +65,6 @@
 
         /* MAPA */
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #e2e8f0; }
-        .map-crosshair { cursor: crosshair !important; }
 
         /* MINIMALISTYCZNY PANEL DOLNY */
         #ui-panel {
@@ -84,32 +78,10 @@
         .panel-header h1 { font-size: 1.15rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: var(--primary-light); color: var(--primary-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
         
-        /* PRZYCISK WYCISZANIA */
         .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
         .btn-icon:hover, .btn-icon:active { color: var(--primary); background: var(--primary-light); }
 
-        /* CZERWONY FAB */
-        #fab-add {
-            position: absolute; bottom: 90px; right: 20px;
-            width: 60px; height: 60px; border-radius: 50%;
-            background: var(--primary); color: white;
-            border: none; box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-            z-index: 1001; cursor: pointer; display: flex; justify-content: center; align-items: center;
-        }
-        #fab-add:active { transform: scale(0.95); background: var(--primary-dark); }
-        
-        /* BANER INSTRUKCYJNY */
-        #instruction-banner {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: var(--primary); color: white; padding: 12px 24px;
-            border-radius: 30px; font-weight: 700; font-size: 0.95rem; border: 2px solid var(--primary-dark);
-            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
-            z-index: 1001; opacity: 0; pointer-events: none;
-            display: flex; align-items: center; gap: 8px; white-space: nowrap; transition: transform 0.2s, opacity 0.2s;
-        }
-        #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-        /* JASNY MODAL ZGŁOSZENIA */
+        /* MODAL ZGŁOSZENIA */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(15, 23, 42, 0.7); z-index: 2000; justify-content: center; align-items: flex-end; padding: 0;
@@ -118,7 +90,8 @@
             background: var(--bg-panel); width: 100%; max-width: 500px; border-top: 4px solid var(--primary);
             padding: 24px; border-radius: 20px 20px 0 0;
         }
-        .modal-title { font-size: 1.25rem; font-weight: 900; margin-bottom: 20px; color: var(--primary); text-align: center; }
+        .modal-title { font-size: 1.25rem; font-weight: 900; margin-bottom: 5px; color: var(--primary); text-align: center; }
+        .modal-subtitle { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); text-align: center; margin-bottom: 20px; }
         
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -128,32 +101,40 @@
         }
         .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
         .input-group select:disabled { opacity: 0.5; background: var(--bg-solid); cursor: not-allowed; }
-        .input-group select.error { border-color: var(--primary); }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
         .btn { flex: 1; padding: 14px; border-radius: var(--radius-md); font-weight: 800; border: none; cursor: pointer; font-size: 1rem; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--border-color) !important; color: var(--text-muted) !important; border: none !important; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--border-color) !important; color: var(--text-muted) !important; }
         .btn-cancel { background: var(--bg-solid); color: var(--text-dark); border: 2px solid var(--border-color); }
         .btn-submit { background: var(--primary); color: white; border: 2px solid var(--primary-dark); }
 
-        /* JASNE MARKERY I DYMKI (Popup) */
+        /* MARKERY I DYMKI (Popup) */
         .map-marker {
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+            border-radius: 50%; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .map-marker.faded { opacity: 0.6; filter: grayscale(80%); }
+        .map-marker.pulse { animation: pulseWarning 1.5s infinite; }
+        @keyframes pulseWarning {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
         .leaflet-popup-content-wrapper { background: var(--bg-panel); border-radius: var(--radius-md); padding: 0; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .leaflet-popup-content { margin: 0; min-width: 260px; }
+        .leaflet-popup-content { margin: 0; min-width: 280px; }
         .leaflet-popup-tip { background: var(--bg-panel); border: 1px solid var(--border-color); border-top: none; border-left: none; }
         
-        .popup-header { padding: 12px 16px; font-weight: 900; font-size: 15px; color: white; display: flex; align-items: center; gap: 6px; justify-content: space-between;}
+        .popup-header { padding: 14px 16px; font-weight: 900; font-size: 16px; color: white; display: flex; align-items: center; gap: 6px; justify-content: space-between;}
         .popup-body { padding: 14px 16px; font-size: 14px; color: var(--text-dark); line-height: 1.6; font-weight: 600; }
         .popup-actions { display: flex; padding: 12px; gap: 12px; background: var(--bg-solid); border-top: 1px solid var(--border-color); justify-content: center; }
         
         .card-time .fresh { color: var(--success); }
         .card-time .old { color: var(--danger); }
 
-        /* PRZYCISKI GŁOSOWANIA (Tylko Ikony) */
+        .btn-report-popup { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        
+        /* PRZYCISKI GŁOSOWANIA */
         .vote-btn {
             flex: 1; padding: 12px; border-radius: var(--radius-md); border: 2px solid var(--border-color);
             background: var(--bg-panel); color: var(--text-muted); cursor: pointer;
@@ -163,10 +144,8 @@
         .vote-btn:active:not(:disabled) { transform: scale(0.95); }
         .vote-btn.active-up { background: #d1fae5; color: #047857; border-color: #10b981; }
         .vote-btn.active-down { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
-        
-        .deny-counter { font-size: 14px; font-weight: 900; margin-left: 6px; }
 
-        /* CZERWONY TOAST */
+        /* TOAST */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: var(--primary); color: white; padding: 14px 28px; border-radius: 30px; font-size: 0.95rem; font-weight: 800; border: 2px solid var(--primary-dark); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); animation: toastEnter 0.2s forwards, toastLeave 0.2s forwards 3.5s; opacity: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
@@ -187,20 +166,12 @@
 
     <div id="city-selector-overlay">
         <div class="city-card">
-            <h1><span class="material-symbols-outlined icon-lg">radar</span> Kanarek</h1>
+            <h1><span class="material-symbols-outlined icon-lg">tram</span> Kanarek Tramwaje</h1>
             <p>Wybierz miasto, aby kontynuować</p>
             <div class="city-list">
                 <button class="city-btn active" id="btn-select-gorzow">
                     <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">location_city</span> Gorzów Wlkp.</span>
                     <span class="material-symbols-outlined icon-md">chevron_right</span>
-                </button>
-                <button class="city-btn disabled">
-                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">map</span> Szczecin</span>
-                    <span class="badge">Wkrótce</span>
-                </button>
-                <button class="city-btn disabled">
-                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">map</span> Zielona Góra</span>
-                    <span class="badge">Wkrótce</span>
                 </button>
             </div>
         </div>
@@ -210,17 +181,9 @@
         <div id="map"></div>
         <div id="toast-container"></div>
         
-        <div id="instruction-banner">
-            <span class="material-symbols-outlined icon-md">location_on</span> Wskaż miejsce na mapie
-        </div>
-        
-        <button id="fab-add">
-            <span class="material-symbols-outlined icon-lg" id="fab-icon">add</span>
-        </button>
-
         <div id="ui-panel">
             <div class="panel-header">
-                <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> Kanarek</h1>
+                <h1><span class="material-symbols-outlined icon-lg">tram</span> Kanarek</h1>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="btn-mute" class="btn-icon" title="Wycisz dźwięki">
                         <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
@@ -232,30 +195,31 @@
 
         <div id="modalOverlay" class="modal-overlay">
             <div class="modal-content">
-                <h2 class="modal-title">Zgłoś Utrudnienie</h2>
+                <h2 class="modal-title">Zgłoś na przystanku</h2>
+                <div id="modal-stop-name" class="modal-subtitle">Nazwa przystanku</div>
                 
                 <div class="input-group">
-                    <label>Rodzaj</label>
+                    <label>Rodzaj Utrudnienia</label>
                     <select id="event-type">
                         <option value="kanar">Kontrola biletów (Kanar)</option>
-                        <option value="awaria">Awaria pojazdu</option>
-                        <option value="opoznienie">Opóźnienie / Korek</option>
+                        <option value="awaria">Awaria tramwaju</option>
+                        <option value="opoznienie">Opóźnienie / Zatrzymanie</option>
                         <option value="inne">Inne utrudnienie</option>
                     </select>
                 </div>
                 
                 <div class="input-group">
-                    <label>Linia <span style="color:var(--primary)">*</span></label>
+                    <label>Linia Tramwajowa <span style="color:var(--primary)">*</span></label>
                     <select id="event-line">
                         <option value="" disabled selected>Wybierz linię...</option>
-                        </select>
+                    </select>
                 </div>
                 
                 <div class="input-group">
                     <label>Kierunek <span style="color:var(--primary)">*</span></label>
                     <select id="event-direction" disabled>
                         <option value="" disabled selected>Najpierw wybierz linię...</option>
-                        </select>
+                    </select>
                 </div>
 
                 <div class="modal-buttons">
@@ -274,101 +238,105 @@
             apiKey: "AIzaSyBDA0kFNmO3O0L57M1V7x4FFImpS8IpNC0",
             authDomain: "radar-585fa.firebaseapp.com",
             databaseURL: "https://radar-585fa-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "radar-585fa",
-            storageBucket: "radar-585fa.firebasestorage.app",
-            messagingSenderId: "273151127719",
-            appId: "1:273151127719:web:0f4477fafe77248e312b82"
+            projectId: "radar-585fa"
         };
 
         const EVENT_CONFIG = {
             kanar: { label: 'Kanar', color: '#dc2626', icon: 'confirmation_number' },
             awaria: { label: 'Awaria', color: '#7f1d1d', icon: 'build' },
-            opoznienie: { label: 'Korek', color: '#d97706', icon: 'schedule' },
-            inne: { label: 'Inne', color: '#1d4ed8', icon: 'warning' }
+            opoznienie: { label: 'Zatrzymanie', color: '#d97706', icon: 'schedule' },
+            inne: { label: 'Inne', color: '#1d4ed8', icon: 'warning' },
+            default: { label: 'Przystanek', color: '#0f172a', icon: 'tram' }
         };
 
-        // DANE DLA LINII I KIERUNKÓW
-        const LINES_DATA = {
-            "1": ["Fieldorfa-\"Nila\"", "Wieprzyce PKP"],
-            "2": ["Piaski", "Wieprzyce PKP"],
-            "3": ["Piaski", "Fieldorfa-\"Nila\""],
-            "4": ["Fieldorfa Nila", "Dworzec Główny"],
-            "100": ["Siedlce Ujęcie Wody", "Oś. Staszica", "TPV"],
-            "101": ["Londyńska", "Śląska Pole Golfowe"],
-            "102": ["Śląska Pole Golfowe", "Dekerta-Szpital"],
-            "103": ["Słowiańska", "Strażacka", "TPV"],
-            "104": ["Bora-Komorowskiego", "TPV", "Słowiańska"],
-            "105": ["Oś. Staszica", "Cmentarz Brama II"],
-            "106": ["Odlewników", "AWF"],
-            "107": ["Drozdowa Ogrody Działkowe", "Działkowców-Pętla"],
-            "108": ["Strażacka", "Oś. Staszica"],
-            "109": ["Londyńska", "Fieldorfa-\"Nila\""],
-            "110": ["Drozdowa Ogrody Działkowe", "Oś. Staszica"],
-            "111": ["Śląska Pole Golfowe", "Cmentarz Brama II", "Chwalęcice Kościelna"],
-            "112": ["Oś. Staszica", "Łagodzin"],
-            "113": ["Wawrów Stadion", "Oś. Staszica", "TPV"],
-            "114": ["Rondo Sybiraków", "Bora-Komorowskiego"],
-            "115": ["Piaski", "Londyńska"],
-            "116": ["Strażacka", "Oś. Staszica"],
-            "117": ["AWF", "Chróścik"],
-            "119": ["Zajezdnia Kostrzyńska", "Chróścik", "Chróścik Inneko"],
-            "120": ["Odlewników", "AWF"],
-            "121": ["TPV", "Śląska Pole Golfowe"],
-            "122": ["Janice", "Czechów", "Czechów SARRIS DAM", "Oś. Staszica"],
-            "123": ["Bora-Komorowskiego", "TPV"],
-            "124": ["Oś. Staszica", "Jedwabnicza Park Handlowy", "Prefadom"],
-            "125": ["Śląska Pole Golfowe", "Dekerta-Szpital"],
-            "126": ["Oś. Staszica", "Dekerta-Szpital"],
-            "127": ["Oś. Staszica", "Łagodzin", "Kasprzaka Terminal"],
-            "128": ["Piaski", "Jedwabnicza Park nie"],
-            "130": ["Stanowice", "AWF", "Baczyna"],
-            "131": ["Stanowice", "AWF", "Baczyna"],
-            "132": ["Bora-Komorowskiego", "Cmentarz Brama II"],
-            "134": ["Dekerta-Szpital", "Strażacka"],
-            "135": ["Małyszyńska", "Dekerta-Szpital"],
-            "136": ["Małyszyńska", "Śląska Pole Golfowe"],
-            "401": ["Zajezdnia Kostrzyńska", "Śląska Pole Golfowe"],
-            "402": ["Zajezdnia Kostrzyńska", "Oś. Staszica"],
-            "510": ["Zajezdnia Kostrzyńska"],
-            "511": ["Zajezdnia Kostrzyńska"],
-            "512": ["Zajezdnia Kostrzyńska"],
-            "201": ["Jezioro Nierzym", "Londyńska"]
+        // BAZA PRZYSTANKÓW (Współrzędne)
+        const STOPS_COORDS = {
+            "Fieldorfa\"Nila\"": [52.763085,15.276138], // Użyto współrzędnych Jedwabnicza
+            "Szarych Szeregów": [52.760357,15.272396],
+            "Rondo Gdańskie": [52.757420,15.268347],
+            "Medyk": [52.754433,15.264330],
+            "Walczaka Szpital": [52.751869,15.260814],
+            "Stilon": [52.746962,15.254183],
+            "Park Kopernika": [52.744499,15.250299],
+            "Pomorska": [52.741713,15.253991],
+            "Rondo Solidarności": [52.738022,15.256433],
+            "Rondo Santockie": [52.734044,15.254958],
+            "CEZiB": [52.733899,15.252439],
+            "Pl. Staromiejski": [52.733106,15.246015],
+            "Herberta": [52.732244,15.243514],
+            "Wełniany Rynek": [52.731573,15.240764],
+            "Katedra": [52.730923,15.238322],
+            "Dworcowa": [52.729965,15.230386],
+            "Dworzec Główny": [52.728475,15.229099],
+            "Jancarza": [52.729444,15.225343],
+            "Żelazna": [52.727433,15.219205],
+            "Olimpijska": [52.725622,15.210180],
+            "Os. Słoneczne": [52.724704,15.205415],
+            "Pl. Słoneczny": [52.723542,15.198743],
+            "Tartaczna": [52.722220,15.189655],
+            "Zajezdnia Kostrzyńska": [52.719600,15.182916],
+            "Wieprzyce PKP": [52.718452,15.180822],
+            "Wybickiego": [52.732841,15.236707],
+            "Pl. Nieznanego Żołnierza": [52.734804,15.235200],
+            "Borowskiego": [52.736658,15.233786],
+            "Pl. Grunwaldzki": [52.739142,15.232211],
+            "Sąd Okręgowy": [52.743304,15.229694],
+            "Chodkiewicza": [52.746714,15.230699],
+            "Kilińskiego": [52.750198,15.231792],
+            "Piaski": [52.753106,15.232144]
         };
 
-        const ALLOWED_BOUNDS = L.latLngBounds([52.6500, 15.0000], [52.8200, 15.4200]);
+        // TOPOLOGIA LINII TRAMWAJOWYCH (Kolejność przystanków)
+        const TRAM_ROUTES = {
+            "1": {
+                "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpijska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
+                "Wieprzyce PKP": ["Fieldorfa\"Nila\"", "Szarych Szeregów", "Rondo Gdańskie", "Medyk", "Walczaka Szpital", "Stilon", "Park Kopernika", "Pomorska", "Rondo Solidarności", "Rondo Santockie", "CEZiB", "Pl. Staromiejski", "Wełniany Rynek", "Katedra", "Dworcowa", "Jancarza", "Żelazna", "Olimpijska", "Os. Słoneczne", "Pl. Słoneczny", "Tartaczna", "Zajezdnia Kostrzyńska", "Wieprzyce PKP"]
+            },
+            "2": {
+                "Piaski": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpijska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Wybickiego", "Pl. Nieznanego Żołnierza", "Borowskiego", "Pl. Grunwaldzki", "Sąd Okręgowy", "Chodkiewicza", "Kilińskiego", "Piaski"],
+                "Wieprzyce PKP": ["Piaski", "Kilińskiego", "Chodkiewicza", "Sąd Okręgowy", "Pl. Grunwaldzki", "Borowskiego", "Pl. Nieznanego Żołnierza", "Wybickiego", "Katedra", "Dworcowa", "Jancarza", "Żelazna", "Olimpijska", "Os. Słoneczne", "Pl. Słoneczny", "Tartaczna", "Zajezdnia Kostrzyńska", "Wieprzyce PKP"]
+            },
+            "3": {
+                "Fieldorfa\"Nila\"": ["Piaski", "Kilińskiego", "Chodkiewicza", "Sąd Okręgowy", "Pl. Grunwaldzki", "Borowskiego", "Pl. Nieznanego Żołnierza", "Wybickiego", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
+                "Piaski": ["Fieldorfa\"Nila\"", "Szarych Szeregów", "Rondo Gdańskie", "Medyk", "Walczaka Szpital", "Stilon", "Park Kopernika", "Pomorska", "Rondo Solidarności", "Rondo Santockie", "CEZiB", "Pl. Staromiejski", "Wełniany Rynek", "Katedra", "Wybickiego", "Pl. Nieznanego Żołnierza", "Borowskiego", "Pl. Grunwaldzki", "Sąd Okręgowy", "Chodkiewicza", "Kilińskiego", "Piaski"]
+            },
+            "4": {
+                "Fieldorfa\"Nila\"": ["Dworzec Główny", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
+                "Dworzec Główny": ["Fieldorfa\"Nila\"", "Szarych Szeregów", "Rondo Gdańskie", "Medyk", "Walczaka Szpital", "Stilon", "Park Kopernika", "Pomorska", "Rondo Solidarności", "Rondo Santockie", "CEZiB", "Pl. Staromiejski", "Wełniany Rynek", "Katedra", "Dworcowa", "Dworzec Główny"]
+            }
+        };
+
+        const ALLOWED_BOUNDS = L.latLngBounds([52.6800, 15.1000], [52.8200, 15.4200]);
         const FADE_THRESHOLD_MS = 15 * 60 * 1000;
-        const DELETE_THRESHOLD_MS = 25 * 60 * 1000;
+        const DELETE_THRESHOLD_MS = 30 * 60 * 1000;
+        const KANAR_SHIFT_MS = 2 * 60 * 1000; // Co 2 minuty kanar zmienia przystanek
 
         let db, reportsRef;
         let reports = {};
-        let leafletMarkers = {};
-        let tempCoords = null;
-        let isAddingMode = false;
         let map;
+        
+        let stopMarkers = {}; // Obiekty Leaflet markerów
+        let activePolylines = []; // Linie tras zaznaczone na mapie
+        
+        // Stan formularza
+        let selectedStopForReport = null;
 
-        // ZMIENNE DO DŹWIĘKÓW
         let isMuted = false;
         const btnMute = document.getElementById('btn-mute');
         const muteIcon = document.getElementById('mute-icon');
 
-        // Obsługa wyciszania
         btnMute.addEventListener('click', () => {
             isMuted = !isMuted;
             muteIcon.textContent = isMuted ? 'volume_off' : 'volume_up';
-            if (isMuted) {
-                showToast("volume_off", "Dźwięki wyciszone");
-            } else {
-                showToast("volume_up", "Dźwięki włączone");
-            }
+            showToast(isMuted ? "volume_off" : "volume_up", isMuted ? "Dźwięki wyciszone" : "Dźwięki włączone");
         });
 
-        // Bezpieczna funkcja odtwarzająca dźwięk
         function playSound(audioId) {
             if (isMuted) return;
             const audio = document.getElementById(audioId);
             if (audio) {
-                audio.currentTime = 0; // Przewiń do początku, jeśli grał
-                audio.play().catch(e => console.log("Zablokowano autoodtwarzanie dźwięku"));
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Zablokowano audio"));
             }
         }
 
@@ -376,10 +344,7 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            if(isError) {
-                toast.style.background = '#0f172a';
-                toast.style.borderColor = '#000000';
-            }
+            if(isError) { toast.style.background = '#0f172a'; toast.style.borderColor = '#000000'; }
             toast.innerHTML = `<span class="material-symbols-outlined icon-md">${icon}</span> ${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
@@ -388,7 +353,6 @@
         function getTimeAgo(timestamp) {
             const diffMs = Date.now() - timestamp;
             const diffMins = Math.floor(diffMs / 60000);
-            
             if (diffMins < 1) return "przed chwilą";
             if (diffMins === 1) return "1 min. temu";
             return `${diffMins} min. temu`;
@@ -399,20 +363,22 @@
             setTimeout(() => {
                 document.getElementById('city-selector-overlay').style.display = 'none';
                 document.getElementById('app-container').style.display = 'block';
-                initRadar();
+                initMap();
             }, 300);
         });
 
-        function initRadar() {
+        function initMap() {
             map = L.map('map', { 
-                zoomControl: false, maxBounds: ALLOWED_BOUNDS, maxBoundsViscosity: 1.0, minZoom: 11
+                zoomControl: false, maxBounds: ALLOWED_BOUNDS, maxBoundsViscosity: 1.0, minZoom: 12
             }).setView([52.7367, 15.2288], 13);
             
             L.control.zoom({ position: 'topright' }).addTo(map);
-            
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
-                maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO'
+                maxZoom: 19, attribution: '&copy; OpenStreetMap'
             }).addTo(map);
+
+            // Inicjalizacja bazy przystanków na mapie
+            initStopMarkers();
 
             try {
                 const app = initializeApp(firebaseConfig);
@@ -421,177 +387,344 @@
                 
                 onValue(reportsRef, (snapshot) => {
                     reports = snapshot.val() || {};
-                    renderUI();
+                    renderNetworkState();
                 });
                 
-                setInterval(() => {
-                    if(Object.keys(reports).length > 0) renderUI();
-                }, 15000); 
+                // Główna pętla przeliczająca pozycje kanarów co 10 sekund
+                setInterval(renderNetworkState, 10000); 
 
             } catch (error) {
                 showToast("wifi_off", "Brak połączenia", true);
             }
-
-            setupMapEvents();
-            setupFormSelects();
         }
 
+        // --- Logika sieci i dynamicznych przesunięć ---
+
+        function initStopMarkers() {
+            for (const [stopName, coords] of Object.entries(STOPS_COORDS)) {
+                // Tworzymy domyślny marker przystanku
+                const icon = L.divIcon({
+                    className: 'map-marker',
+                    html: `<div style="background-color:#0f172a; width:100%; height:100%; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;">
+                               <span class="material-symbols-outlined" style="font-size:16px;">tram</span>
+                           </div>`,
+                    iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14]
+                });
+
+                const marker = L.marker(coords, { icon: icon }).addTo(map);
+                
+                // Event kliknięcia w przystanek
+                marker.on('click', () => { handleStopClick(stopName); });
+                
+                stopMarkers[stopName] = { marker: marker, defaultIcon: icon };
+            }
+        }
+
+        function handleStopClick(stopName) {
+            // Szukamy, czy na tym przystanku jest AKTYWNE ZGŁOSZENIE (po przeliczeniu algorytmu)
+            const activeReport = getActiveReportForStop(stopName);
+
+            if (activeReport) {
+                openReportPopup(stopName, activeReport);
+            } else {
+                openDefaultStopPopup(stopName);
+            }
+        }
+
+        function openDefaultStopPopup(stopName) {
+            // Znajdź jakie linie tu jeżdżą
+            let passingLines = [];
+            for (const [line, directions] of Object.entries(TRAM_ROUTES)) {
+                for (const route of Object.values(directions)) {
+                    if (route.includes(stopName) && !passingLines.includes(line)) {
+                        passingLines.push(line);
+                    }
+                }
+            }
+
+            const html = `
+                <div class="popup-header" style="background-color: #0f172a;">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-sm">tram</span> ${stopName}</span>
+                </div>
+                <div class="popup-body">
+                    <p style="margin-bottom:10px; color:var(--text-muted);">Linie: <strong>${passingLines.join(', ')}</strong></p>
+                    <p style="font-size: 12px; color: var(--success);"><span class="material-symbols-outlined icon-sm">check_circle</span> Brak zgłoszonych utrudnień.</p>
+                </div>
+                <div class="popup-actions">
+                    <button class="btn-report-popup" onclick="window.startReportForm('${stopName}')">
+                        <span class="material-symbols-outlined icon-md">add_alert</span> Zgłoś utrudnienie
+                    </button>
+                </div>
+            `;
+            stopMarkers[stopName].marker.bindPopup(html).openPopup();
+        }
+
+        function openReportPopup(stopName, reportData) {
+            const r = reportData.report; // Oryginalne dane z DB
+            const config = EVENT_CONFIG[r.type];
+            const ageMs = Date.now() - r.createdAt;
+            const isFaded = ageMs > FADE_THRESHOLD_MS;
+            
+            const confirmsCount = r.confirms || 0;
+            const deniesCount = r.denies || 0;
+            const userVote = localStorage.getItem(`vote_${r.id}`);
+
+            // Jeśli to kanar, pokazujemy ile przystanków już przejechał
+            let extraInfo = '';
+            if (r.type === 'kanar' && reportData.shiftedStops > 0) {
+                extraInfo = `<div style="font-size:12px; background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:4px; margin-bottom:8px; font-weight:700;">
+                                Oszacowano na podstawie czasu: Przesunięto o ${reportData.shiftedStops} przystanków od momentu zgłoszenia.
+                             </div>`;
+            }
+
+            const html = `
+                <div class="popup-header" style="background-color: ${config.color}">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-sm">${config.icon}</span> ${config.label} (L${r.line})</span>
+                </div>
+                <div class="popup-body">
+                    <div style="font-size:16px; font-weight:800; margin-bottom:8px;">Przystanek: ${stopName}</div>
+                    <div class="icon-text-gap" style="margin-bottom: 8px;">
+                        <span class="material-symbols-outlined icon-sm">signpost</span> Kierunek: ${r.direction}
+                    </div>
+                    ${extraInfo}
+                    <div style="font-size: 12px; color: var(--text-muted); display:flex; justify-content: space-between;">
+                        <span>Dodano: ${getTimeAgo(r.createdAt)}</span>
+                    </div>
+                    <div style="display: flex; gap: 16px; margin-top: 12px; justify-content: center;">
+                        <span class="icon-text-gap" style="color: var(--success); font-weight: 800;"><span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}</span>
+                        <span class="icon-text-gap" style="color: var(--danger); font-weight: 800;"><span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}/3</span>
+                    </div>
+                </div>
+                <div class="popup-actions">
+                    <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" onclick="window.voteReport('${r.id}', 'up')" title="Potwierdzam">
+                        <span class="material-symbols-outlined icon-lg">thumb_up</span>
+                    </button>
+                    <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" onclick="window.voteReport('${r.id}', 'down')" title="Odwołaj">
+                        <span class="material-symbols-outlined icon-lg">thumb_down</span> 
+                    </button>
+                </div>
+            `;
+            stopMarkers[stopName].marker.bindPopup(html).openPopup();
+        }
+
+        // Pobiera przeliczony status dla danego przystanku (czy w tym momencie coś tu jest)
+        function getActiveReportForStop(stopName) {
+            const now = Date.now();
+            let foundReport = null;
+
+            for (const report of Object.values(reports)) {
+                if(now - report.createdAt > DELETE_THRESHOLD_MS) continue;
+
+                const route = TRAM_ROUTES[report.line]?.[report.direction];
+                if(!route) continue;
+
+                const startIndex = route.indexOf(report.startStop);
+                if(startIndex === -1) continue;
+
+                let currentIndex = startIndex;
+                let shiftedStops = 0;
+
+                // Algorytm przesuwania Kanara
+                if(report.type === 'kanar') {
+                    shiftedStops = Math.floor((now - report.createdAt) / KANAR_SHIFT_MS);
+                    currentIndex = startIndex + shiftedStops;
+                    
+                    // Jeśli dojechał do pętli, zatrzymuje się na ostatnim przystanku
+                    if(currentIndex >= route.length) {
+                        currentIndex = route.length - 1;
+                    }
+                }
+
+                if(route[currentIndex] === stopName) {
+                    foundReport = { report: report, shiftedStops: shiftedStops, currentIndex: currentIndex, route: route };
+                    break; 
+                }
+            }
+            return foundReport;
+        }
+
+        function renderNetworkState() {
+            const now = Date.now();
+            
+            // 1. Reset wszystkich markerów do stanu domyślnego
+            for (const [stopName, obj] of Object.entries(stopMarkers)) {
+                obj.marker.setIcon(obj.defaultIcon);
+            }
+            
+            // 2. Usunięcie starych linii tras
+            activePolylines.forEach(pl => map.removeLayer(pl));
+            activePolylines = [];
+
+            // 3. Przeliczenie aktywnych zgłoszeń
+            for (const report of Object.values(reports)) {
+                if(now - report.createdAt > DELETE_THRESHOLD_MS) {
+                    remove(ref(db, `reports/${report.id}`));
+                    continue;
+                }
+
+                const route = TRAM_ROUTES[report.line]?.[report.direction];
+                if(!route) continue;
+
+                const startIndex = route.indexOf(report.startStop);
+                if(startIndex === -1) continue;
+
+                let currentIndex = startIndex;
+                if(report.type === 'kanar') {
+                    const shifted = Math.floor((now - report.createdAt) / KANAR_SHIFT_MS);
+                    currentIndex = Math.min(startIndex + shifted, route.length - 1);
+                }
+
+                const currentStopName = route[currentIndex];
+                const config = EVENT_CONFIG[report.type];
+                
+                // Ustawienie ostrzegawczej ikony na przystanku docelowym
+                if(stopMarkers[currentStopName]) {
+                    const isFaded = (now - report.createdAt) > FADE_THRESHOLD_MS;
+                    const pulseClass = (report.type === 'kanar' && !isFaded) ? 'pulse' : '';
+                    const alertIcon = L.divIcon({
+                        className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
+                        html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                   <span class="material-symbols-outlined icon-md">${config.icon}</span>
+                               </div>`,
+                        iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -20]
+                    });
+                    stopMarkers[currentStopName].marker.setIcon(alertIcon);
+                    
+                    // Odśwież popup jeśli jest otwarty (żeby zaktualizował upływ czasu/pozycję)
+                    if(stopMarkers[currentStopName].marker.isPopupOpen()) {
+                        openReportPopup(currentStopName, { report, shiftedStops: currentIndex - startIndex });
+                    }
+                }
+
+                // Rysowanie czerwonej linii na trasie od obecnego przystanku przez kolejne 4 (lub do końca)
+                if(currentIndex < route.length - 1) {
+                    const points = [];
+                    // Rysuj na najbliższe 5 przystanków w przód, by ostrzec kierunek
+                    const maxEnd = Math.min(currentIndex + 5, route.length);
+                    for(let i = currentIndex; i < maxEnd; i++) {
+                        points.push(STOPS_COORDS[route[i]]);
+                    }
+                    
+                    const polyline = L.polyline(points, {
+                        color: config.color, weight: 6, opacity: 0.7, dashArray: '10, 10', lineJoin: 'round'
+                    }).addTo(map);
+                    activePolylines.push(polyline);
+                }
+            }
+        }
+
+
+        // --- LOGIKA FORMULARZA ZGŁOSZEŃ ---
+
         const modal = document.getElementById('modalOverlay');
-        const fabAdd = document.getElementById('fab-add');
-        const fabIcon = document.getElementById('fab-icon');
-        const banner = document.getElementById('instruction-banner');
         const inputLine = document.getElementById('event-line');
         const inputDir = document.getElementById('event-direction');
         const btnSubmit = document.getElementById('btn-submit');
 
-        // Funkcja inicjująca listy rozwijane linii i kierunków
-        function setupFormSelects() {
-            // Sortowanie linii - numeryczne
-            const sortedLines = Object.keys(LINES_DATA).sort((a, b) => parseInt(a) - parseInt(b));
+        // Funkcja globalna dla popupa
+        window.startReportForm = (stopName) => {
+            selectedStopForReport = stopName;
+            document.getElementById('modal-stop-name').textContent = stopName;
             
-            sortedLines.forEach(line => {
+            // Czyszczenie formularza
+            inputLine.innerHTML = '<option value="" disabled selected>Wybierz linię...</option>';
+            inputDir.innerHTML = '<option value="" disabled selected>Najpierw wybierz linię...</option>';
+            inputDir.disabled = true;
+            btnSubmit.disabled = true;
+
+            // Znalezienie dostępnych linii dla TEGO przystanku
+            let availableLines = [];
+            for (const [line, directions] of Object.entries(TRAM_ROUTES)) {
+                let stopExistsOnLine = false;
+                for (const route of Object.values(directions)) {
+                    if (route.includes(stopName)) stopExistsOnLine = true;
+                }
+                if(stopExistsOnLine) availableLines.push(line);
+            }
+
+            availableLines.sort((a,b) => parseInt(a)-parseInt(b)).forEach(line => {
                 let opt = document.createElement('option');
-                opt.value = line;
-                opt.textContent = `Linia ${line}`;
+                opt.value = line; opt.textContent = `Linia ${line}`;
                 inputLine.appendChild(opt);
             });
 
-            // Reagowanie na zmianę linii
-            inputLine.addEventListener('change', () => {
-                inputLine.classList.remove('error');
-                const selectedLine = inputLine.value;
-                
-                // Resetowanie listy kierunków
-                inputDir.innerHTML = '<option value="" disabled selected>Wybierz kierunek...</option>';
-                
-                if (selectedLine && LINES_DATA[selectedLine]) {
-                    inputDir.disabled = false;
-                    LINES_DATA[selectedLine].forEach(dir => {
+            stopMarkers[stopName].marker.closePopup();
+            modal.style.display = 'flex';
+        };
+
+        // Kaskadowe wypełnianie kierunków po wybraniu linii (tylko poprawne kierunki!)
+        inputLine.addEventListener('change', () => {
+            const line = inputLine.value;
+            inputDir.innerHTML = '<option value="" disabled selected>Wybierz kierunek...</option>';
+            
+            if (line && TRAM_ROUTES[line]) {
+                inputDir.disabled = false;
+                for (const [dirName, routeArray] of Object.entries(TRAM_ROUTES[line])) {
+                    const stopIndex = routeArray.indexOf(selectedStopForReport);
+                    // Kierunek jest poprawny tylko, jeśli przystanek jest na trasie i NIE JEST ostatnim przystankiem (bo z ostatniego się nie jedzie dalej)
+                    if (stopIndex !== -1 && stopIndex < routeArray.length - 1) {
                         let opt = document.createElement('option');
-                        opt.value = dir;
-                        opt.textContent = dir;
+                        opt.value = dirName; opt.textContent = `Kierunek: ${dirName}`;
                         inputDir.appendChild(opt);
-                    });
-                } else {
-                    inputDir.disabled = true;
+                    }
                 }
-                validateFormLive();
-            });
-
-            inputDir.addEventListener('change', () => {
-                inputDir.classList.remove('error');
-                validateFormLive();
-            });
-        }
-
-        function validateFormLive() {
-            if (inputLine.value && inputDir.value) {
-                btnSubmit.disabled = false;
             } else {
-                btnSubmit.disabled = true;
+                inputDir.disabled = true;
             }
-        }
+            validateForm();
+        });
 
-        function setupMapEvents() {
-            fabAdd.addEventListener('click', () => {
-                isAddingMode = !isAddingMode;
-                if (isAddingMode) {
-                    document.getElementById('map').classList.add('map-crosshair');
-                    banner.classList.add('active');
-                    fabAdd.style.background = '#0f172a';
-                    fabIcon.textContent = 'close';
-                } else {
-                    exitAddingMode();
-                }
-            });
+        inputDir.addEventListener('change', validateForm);
 
-            map.on('click', (e) => {
-                if (!isAddingMode) return;
-                
-                if (!ALLOWED_BOUNDS.contains(e.latlng)) {
-                    showToast("block", "Poza strefą operacyjną!", true);
-                    exitAddingMode();
-                    return;
-                }
-                
-                tempCoords = e.latlng;
-                
-                // Reset formularza po otwarciu
-                inputLine.value = ''; inputLine.classList.remove('error');
-                inputDir.innerHTML = '<option value="" disabled selected>Najpierw wybierz linię...</option>';
-                inputDir.disabled = true; inputDir.classList.remove('error');
-                btnSubmit.disabled = true; 
-                
-                modal.style.display = 'flex';
-                exitAddingMode();
-            });
-        }
-
-        function exitAddingMode() {
-            isAddingMode = false;
-            document.getElementById('map').classList.remove('map-crosshair');
-            banner.classList.remove('active');
-            fabAdd.style.background = 'var(--primary)';
-            fabIcon.textContent = 'add';
+        function validateForm() {
+            btnSubmit.disabled = !(inputLine.value && inputDir.value);
         }
 
         document.getElementById('btn-cancel').addEventListener('click', () => {
-            modal.style.display = 'none'; tempCoords = null;
+            modal.style.display = 'none'; selectedStopForReport = null;
         });
 
         btnSubmit.addEventListener('click', () => {
-            if (!tempCoords) return;
+            if (!selectedStopForReport || !inputLine.value || !inputDir.value) return;
 
             const type = document.getElementById('event-type').value;
-            const line = inputLine.value;
-            const direction = inputDir.value;
-            
-            let isValid = true;
-            if(!line) { inputLine.classList.add('error'); isValid = false; }
-            if(!direction) { inputDir.classList.add('error'); isValid = false; }
-            if(!isValid) return;
-
-            const nowTimestamp = Date.now();
+            const now = Date.now();
 
             btnSubmit.disabled = true;
             btnSubmit.textContent = "Wysyłanie...";
 
-            const newReportRef = push(reportsRef);
-            
-            set(newReportRef, {
-                id: newReportRef.key,
-                lat: tempCoords.lat, lng: tempCoords.lng,
-                type, line, location: direction,
-                createdAt: nowTimestamp,     
-                lastActivity: nowTimestamp,  
+            const newRef = push(reportsRef);
+            set(newRef, {
+                id: newRef.key,
+                type: type,
+                line: inputLine.value,
+                direction: inputDir.value,
+                startStop: selectedStopForReport, // Przypisujemy wydarzenie do startowego przystanku
+                createdAt: now,
+                lastActivity: now,
                 confirms: 1, denies: 0
             }).then(() => {
-                localStorage.setItem(`vote_${newReportRef.key}`, 'up');
+                localStorage.setItem(`vote_${newRef.key}`, 'up');
                 modal.style.display = 'none';
-                showToast("done", "Zgłoszono poprawnie");
-                map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
-                
-                // Odtworzenie dźwięku zgłoszenia (dodano.mp3)
+                showToast("done", "Zgłoszono pomyślnie");
                 playSound('sound-notify');
                 
+                // Centrowanie mapy na zdarzenie
+                const coords = STOPS_COORDS[selectedStopForReport];
+                if(coords) map.panTo([coords[0] - 0.005, coords[1]]);
             }).catch(() => {
-                showToast("error", "Błąd zapisu", true);
+                showToast("error", "Błąd połączenia", true);
             }).finally(() => {
                 btnSubmit.textContent = "Wyślij";
-                tempCoords = null;
             });
         });
 
+        // --- GŁOSOWANIE ---
         let isVoting = false;
-        
-        document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.vote-btn');
-            if (!btn || isVoting) return;
-            
-            const id = btn.dataset.id;
-            const voteType = btn.dataset.vote;
+        window.voteReport = (id, voteType) => {
+            if(isVoting) return;
             const report = reports[id];
-            if (!report) return;
+            if(!report) return;
 
             isVoting = true;
             const storageKey = `vote_${id}`;
@@ -600,8 +733,6 @@
             let newConfirms = report.confirms || 0;
             let newDenies = report.denies || 0;
             
-            let updatedLastActivity = report.lastActivity || report.lastConfirmed || Date.now();
-
             if (previousVote === voteType) {
                 if (voteType === 'up') newConfirms--;
                 if (voteType === 'down') newDenies--;
@@ -610,133 +741,30 @@
                 if (previousVote === 'up') newConfirms--;
                 if (previousVote === 'down') newDenies--;
                 
-                if (voteType === 'up') { newConfirms++; }
-                if (voteType === 'down') { newDenies++; }
-                
-                updatedLastActivity = Date.now();
+                if (voteType === 'up') newConfirms++;
+                if (voteType === 'down') newDenies++;
                 localStorage.setItem(storageKey, voteType);
             }
 
             if (newDenies >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
-                    showToast("delete", "Usunięto (3 odrzucenia)");
-                    
-                    // Odtworzenie dźwięku odwołania przy pełnym usunięciu
+                    showToast("delete", "Usunięto zgłoszenie");
                     playSound('sound-cancel');
-                    
+                    map.closePopup(); // Zamknięcie dymku po usunięciu
                 }).finally(() => { isVoting = false; });
             } else {
-                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: updatedLastActivity })
+                update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: Date.now() })
                 .then(() => {
                     if (previousVote !== voteType) {
-                        showToast("update", "Zaktualizowano zgłoszenie");
-                        
-                        // Odtworzenie dźwięku zależnie od klikniętego przycisku (za każdym razem)
-                        if (voteType === 'up') {
-                            playSound('sound-confirm');
-                        } else if (voteType === 'down') {
-                            playSound('sound-cancel');
-                        }
+                        showToast("update", "Oddano głos");
+                        if (voteType === 'up') playSound('sound-confirm');
+                        else if (voteType === 'down') playSound('sound-cancel');
                     }
                 }).finally(() => { isVoting = false; });
             }
-        });
+        };
 
-        function renderUI() {
-            const now = Date.now();
-
-            for (let id in leafletMarkers) {
-                if (!reports[id]) {
-                    map.removeLayer(leafletMarkers[id]);
-                    delete leafletMarkers[id];
-                }
-            }
-
-            const reportsArray = Object.values(reports);
-            if (reportsArray.length === 0) return;
-
-            reportsArray.forEach(report => {
-                const createdTime = report.createdAt || report.lastConfirmed || now;
-                const lastActivityTime = report.lastActivity || report.lastConfirmed || now;
-                
-                const ageMs = now - lastActivityTime;
-                
-                if (ageMs > DELETE_THRESHOLD_MS) {
-                    remove(ref(db, `reports/${report.id}`));
-                    return; 
-                }
-                
-                const isFaded = ageMs > FADE_THRESHOLD_MS;
-                const fadeClass = isFaded ? 'faded' : '';
-                
-                const relativeCreatedStr = getTimeAgo(createdTime);
-                const relativeActivityStr = getTimeAgo(lastActivityTime);
-                const timeStatusClass = isFaded ? 'old' : 'fresh';
-
-                const config = EVENT_CONFIG[report.type];
-                const userVote = localStorage.getItem(`vote_${report.id}`);
-                const deniesCount = report.denies || 0;
-                const confirmsCount = report.confirms || 0;
-
-                const popupHtml = `
-                    <div class="popup-header" style="background-color: ${config.color}">
-                        <span class="icon-text-gap">
-                            <span class="material-symbols-outlined icon-sm">${config.icon}</span>
-                            ${config.label} (${report.line})
-                        </span>
-                    </div>
-                    <div class="popup-body">
-                        <div class="icon-text-gap" style="margin-bottom: 8px;">
-                            <span class="material-symbols-outlined icon-sm">signpost</span> 
-                            <strong>Kierunek:</strong> ${report.location}
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-muted); display:flex; justify-content: space-between;">
-                            <span>Dodano: ${relativeCreatedStr}</span>
-                            <span class="card-time"><span class="${timeStatusClass}" style="font-weight: 800;">Aktywność: ${relativeActivityStr}</span></span>
-                        </div>
-                        
-                        <div style="display: flex; gap: 16px; margin-top: 12px; justify-content: center;">
-                            <span class="icon-text-gap" style="color: var(--success); font-weight: 800; font-size: 0.9rem;">
-                                <span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}
-                            </span>
-                            <span class="icon-text-gap" style="color: var(--danger); font-weight: 800; font-size: 0.9rem;">
-                                <span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}/3
-                            </span>
-                        </div>
-                    </div>
-                    <div class="popup-actions">
-                        <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${report.id}" data-vote="up" title="Potwierdzam">
-                            <span class="material-symbols-outlined icon-lg">thumb_up</span>
-                        </button>
-                        
-                        <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down" title="Zgłoś nieobecność">
-                            <span class="material-symbols-outlined icon-lg">thumb_down</span> 
-                        </button>
-                    </div>
-                `;
-
-                const customIcon = L.divIcon({
-                    className: `map-marker ${fadeClass}`,
-                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                               <span class="material-symbols-outlined icon-md">${config.icon}</span>
-                           </div>`,
-                    iconSize: [44, 44],
-                    iconAnchor: [22, 22],
-                    popupAnchor: [0, -20]
-                });
-
-                if (leafletMarkers[report.id]) {
-                    leafletMarkers[report.id].setPopupContent(popupHtml);
-                    leafletMarkers[report.id].setIcon(customIcon);
-                } else {
-                    const marker = L.marker([report.lat, report.lng], { icon: customIcon })
-                        .addTo(map)
-                        .bindPopup(popupHtml);
-                    leafletMarkers[report.id] = marker;
-                }
-            });
-        }
     </script>
 </body>
 </html>
