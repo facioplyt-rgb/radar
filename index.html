@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,800,0,0" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
     <style>
         :root {
@@ -323,7 +323,7 @@
         let isAddingMode = false;
         let map;
 
-        // NOWE ZMIENNE DO DŹWIĘKÓW
+        // ZMIENNE DO DŹWIĘKÓW
         let isMuted = false;
         const btnMute = document.getElementById('btn-mute');
         const muteIcon = document.getElementById('mute-icon');
@@ -559,7 +559,7 @@
                     localStorage.removeItem(storageKey);
                     showToast("delete", "Usunięto (3 odrzucenia)");
                     
-                    // Odtworzenie dźwięku odwołania
+                    // Odtworzenie dźwięku odwołania (przy 3 minusie)
                     playSound('sound-cancel');
                     
                 }).finally(() => { isVoting = false; });
@@ -569,9 +569,11 @@
                     if (previousVote !== voteType) {
                         showToast("update", "Zaktualizowano zgłoszenie");
                         
-                        // Odtworzenie dźwięku potwierdzenia TYLKO dla głosu na tak
+                        // Odtworzenie dźwięku zależnie od klikniętego przycisku (za każdym razem)
                         if (voteType === 'up') {
                             playSound('sound-confirm');
+                        } else if (voteType === 'down') {
+                            playSound('sound-cancel');
                         }
                     }
                 }).finally(() => { isVoting = false; });
