@@ -128,10 +128,6 @@
         .card-time .fresh { color: var(--success); }
         .card-time .old { color: var(--danger); }
         .card-location { font-size: 0.85rem; color: var(--text-dark); font-weight: 600; margin-bottom: 12px; }
-        
-        .card-score { font-size: 0.8rem; font-weight: 800; display: inline-flex; padding: 6px 12px; border-radius: 6px; }
-        .score-positive { background: #d1fae5; color: #047857; border: 1px solid #34d399; }
-        .score-negative { background: var(--primary-light); color: var(--primary-dark); border: 1px solid var(--primary); }
 
         /* JASNY MODAL ZGŁOSZENIA */
         .modal-overlay {
@@ -205,11 +201,11 @@
 
     <audio id="sound-confirm" src="potwierdzono.mp3" preload="auto"></audio>
     <audio id="sound-cancel" src="odwolano.mp3" preload="auto"></audio>
-    <audio id="sound-notify" src="powiadomienie.mp3" preload="auto"></audio>
+    <audio id="sound-notify" src="dodano.mp3" preload="auto"></audio>
 
     <div id="city-selector-overlay">
         <div class="city-card">
-            <h1><span class="material-symbols-outlined icon-lg">radar</span> MZK Radar</h1>
+            <h1><span class="material-symbols-outlined icon-lg">radar</span> Kanarek</h1>
             <p>Wybierz miasto, aby kontynuować</p>
             <div class="city-list">
                 <button class="city-btn active" id="btn-select-gorzow">
@@ -243,7 +239,7 @@
         <div id="ui-panel">
             <div class="panel-drag-handle"></div>
             <div class="panel-header">
-                <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> MZK Radar</h1>
+                <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> Kanarek</h1>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button id="btn-mute" class="btn-icon" title="Wycisz dźwięki">
                         <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
@@ -508,7 +504,7 @@
                 showToast("done", "Zgłoszono poprawnie");
                 map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
                 
-                // Odtworzenie dźwięku zgłoszenia
+                // Odtworzenie dźwięku zgłoszenia (dodano.mp3)
                 playSound('sound-notify');
                 
             }).catch(() => {
@@ -559,7 +555,7 @@
                     localStorage.removeItem(storageKey);
                     showToast("delete", "Usunięto (3 odrzucenia)");
                     
-                    // Odtworzenie dźwięku odwołania (przy 3 minusie)
+                    // Odtworzenie dźwięku odwołania przy pełnym usunięciu
                     playSound('sound-cancel');
                     
                 }).finally(() => { isVoting = false; });
@@ -624,10 +620,9 @@
                 const timeStatusClass = isFaded ? 'old' : 'fresh';
 
                 const config = EVENT_CONFIG[report.type];
-                const score = (report.confirms || 0) - (report.denies || 0);
                 const userVote = localStorage.getItem(`vote_${report.id}`);
-                const isPositive = score >= 0;
                 const deniesCount = report.denies || 0;
+                const confirmsCount = report.confirms || 0;
 
                 const card = document.createElement('div');
                 card.className = `event-card ${fadeClass}`;
@@ -651,9 +646,13 @@
                         <span class="material-symbols-outlined icon-sm">signpost</span> 
                         ${report.location}
                     </div>
-                    <div class="card-score icon-text-gap ${isPositive ? 'score-positive' : 'score-negative'}">
-                        <span class="material-symbols-outlined icon-sm">${isPositive ? 'thumb_up' : 'thumb_down'}</span> 
-                        Wiarygodność: ${score}
+                    <div style="display: flex; gap: 16px; margin-top: 8px;">
+                        <span class="icon-text-gap" style="color: var(--success); font-weight: 800; font-size: 0.9rem;">
+                            <span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}
+                        </span>
+                        <span class="icon-text-gap" style="color: var(--danger); font-weight: 800; font-size: 0.9rem;">
+                            <span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}
+                        </span>
                     </div>
                 `;
                 listContainer.appendChild(card);
