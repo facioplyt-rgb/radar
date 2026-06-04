@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -38,7 +38,7 @@
         .icon-lg { font-size: 28px !important; vertical-align: middle; }
         .icon-text-gap { display: inline-flex; align-items: center; gap: 6px; }
 
-        /* JASNY EKRAN STARTOWY */
+        /* EKRAN STARTOWY */
         #city-selector-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             background: rgba(241, 245, 249, 0.95); backdrop-filter: blur(8px);
@@ -60,26 +60,47 @@
             transition: all 0.2s;
         }
         .city-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
-        .city-btn.disabled { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
-        .city-btn.disabled .badge { background: var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 6px; font-size: 10px; }
 
         /* MAPA */
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #e2e8f0; }
 
-        /* MINIMALISTYCZNY PANEL DOLNY */
+        /* ROZBUDOWANY PANEL DOLNY */
         #ui-panel {
             position: absolute; bottom: 0; left: 0; width: 100vw; height: auto;
             background: var(--bg-panel); border-top: 3px solid var(--primary);
             z-index: 1000; display: flex; flex-direction: column;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); padding-bottom: max(env(safe-area-inset-bottom), 16px);
+            box-shadow: 0 -4px 25px rgba(0,0,0,0.08); padding-bottom: max(env(safe-area-inset-bottom), 12px);
         }
 
-        .panel-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .panel-header { padding: 14px 20px 8px 20px; display: flex; justify-content: space-between; align-items: center; }
         .panel-header h1 { font-size: 1.15rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: var(--primary-light); color: var(--primary-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
         
         .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
         .btn-icon:hover, .btn-icon:active { color: var(--primary); background: var(--primary-light); }
+
+        /* SEKCJA LIVE RADAR / PROXIMITY FEED */
+        #proximity-container {
+            display: flex; flex-direction: column; gap: 6px;
+            padding: 4px 16px 12px 16px; max-height: 180px; overflow-y: auto;
+        }
+        .proximity-title {
+            font-size: 0.75rem; font-weight: 800; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; padding-left: 4px;
+        }
+        .alert-card {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-solid); padding: 12px 16px; border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary); cursor: pointer; transition: all 0.2s;
+        }
+        .alert-card:active { transform: scale(0.98); background: #e2e8f0; }
+        .alert-card-left { display: flex; flex-direction: column; gap: 2px; }
+        .alert-card-type { font-size: 0.95rem; font-weight: 900; color: var(--text-dark); display: flex; align-items: center; gap: 6px; }
+        .alert-card-stop { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+        .alert-card-distance {
+            background: var(--primary-light); color: var(--primary-dark);
+            padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 900; white-space: nowrap;
+        }
 
         /* MODAL ZGŁOSZENIA */
         .modal-overlay {
@@ -95,11 +116,11 @@
         
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .input-group input, .input-group select {
+        .input-group select {
             width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: var(--radius-md);
             font-size: 1rem; background: var(--bg-panel); color: var(--text-dark); font-weight: 700;
         }
-        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
+        .input-group select:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
         .input-group select:disabled { opacity: 0.5; background: var(--bg-solid); cursor: not-allowed; }
         
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
@@ -129,19 +150,13 @@
         .popup-body { padding: 14px 16px; font-size: 14px; color: var(--text-dark); line-height: 1.6; font-weight: 600; }
         .popup-actions { display: flex; padding: 12px; gap: 12px; background: var(--bg-solid); border-top: 1px solid var(--border-color); justify-content: center; }
         
-        .card-time .fresh { color: var(--success); }
-        .card-time .old { color: var(--danger); }
-
         .btn-report-popup { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
         
-        /* PRZYCISKI GŁOSOWANIA */
         .vote-btn {
             flex: 1; padding: 12px; border-radius: var(--radius-md); border: 2px solid var(--border-color);
             background: var(--bg-panel); color: var(--text-muted); cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s;
         }
-        .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .vote-btn:active:not(:disabled) { transform: scale(0.95); }
         .vote-btn.active-up { background: #d1fae5; color: #047857; border-color: #10b981; }
         .vote-btn.active-down { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
 
@@ -154,7 +169,6 @@
         @media (min-width: 768px) {
             .modal-content { border-radius: var(--radius-md); margin-bottom: 50px; border: 2px solid var(--primary); }
             .modal-overlay { align-items: center; }
-            L.control.zoom { display: block; }
         }
     </style>
 </head>
@@ -190,6 +204,11 @@
                     </button>
                     <span class="badge">Gorzów Wlkp.</span>
                 </div>
+            </div>
+
+            <div class="proximity-title">Radar bliskich utrudnień GPS</div>
+            <div id="proximity-container">
+                <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:8px;">Oczekiwanie na lokalizację pasażera...</div>
             </div>
         </div>
 
@@ -287,7 +306,7 @@
 
         const TRAM_ROUTES = {
             "1": {
-                "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpiejska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
+                "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpijska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
                 "Wieprzyce PKP": ["Fieldorfa\"Nila\"", "Szarych Szeregów", "Rondo Gdańskie", "Medyk", "Walczaka Szpital", "Stilon", "Park Kopernika", "Pomorska", "Rondo Solidarności", "Rondo Santockie", "CEZiB", "Pl. Staromiejski", "Wełniany Rynek", "Katedra", "Dworcowa", "Jancarza", "Żelazna", "Olimpijska", "Os. Słoneczne", "Pl. Słoneczny", "Tartaczna", "Zajezdnia Kostrzyńska", "Wieprzyce PKP"]
             },
             "2": {
@@ -307,8 +326,8 @@
         const ALLOWED_BOUNDS = L.latLngBounds([52.6800, 15.1000], [52.8200, 15.4200]);
         const FADE_THRESHOLD_MS = 15 * 60 * 1000;
         const DELETE_THRESHOLD_MS = 30 * 60 * 1000;
-        const KANAR_SHIFT_MS = 2 * 60 * 1000; // Co 2 minuty kanar przesuwa się w logice
-        const KANAR_INACTIVE_DEATH = 5 * KANAR_SHIFT_MS; // 10 minut bez potwierdzenia (5 przystanków) usuwa z bazy
+        const KANAR_SHIFT_MS = 2 * 60 * 1000; 
+        const KANAR_INACTIVE_DEATH = 5 * KANAR_SHIFT_MS; 
 
         let db, reportsRef;
         let reports = {};
@@ -318,6 +337,10 @@
         let activePolylines = []; 
         let selectedStopForReport = null;
         let isMuted = false;
+
+        // Geolokalizacja pasażera
+        let userLatLng = null;
+        let userMarker = null;
 
         const btnMute = document.getElementById('btn-mute');
         const muteIcon = document.getElementById('mute-icon');
@@ -376,6 +399,28 @@
 
             initStopMarkers();
 
+            // Uruchomienie lokalizacji pasażera w czasie rzeczywistym
+            map.locate({ watch: true, enableHighAccuracy: true });
+            
+            map.on('locationfound', (e) => {
+                userLatLng = e.latlng;
+                if (!userMarker) {
+                    userMarker = L.circleMarker(e.latlng, {
+                        radius: 9, fillColor: '#3b82f6', color: '#ffffff', weight: 3, opacity: 1, fillOpacity: 0.9
+                    }).addTo(map);
+                } else {
+                    userMarker.setLatLng(e.latlng);
+                }
+                renderNetworkState(); // Odśwież feed i odległości
+            });
+
+            map.on('locationerror', () => {
+                showToast("location_off", "Brak uprawnień GPS. Brak kalkulacji odległości.", true);
+            });
+
+            // Reagowanie na zmianę zoomu mapy (LOD)
+            map.on('zoomend', renderNetworkState);
+
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getDatabase(app);
@@ -403,7 +448,7 @@
                     iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14]
                 });
 
-                const marker = L.marker(coords, { icon: icon }).addTo(map);
+                const marker = L.marker(coords, { icon: icon });
                 marker.on('click', () => { handleStopClick(stopName); });
                 stopMarkers[stopName] = { marker: marker, defaultIcon: icon };
             }
@@ -437,7 +482,7 @@
                     <p style="font-size: 12px; color: var(--success);"><span class="material-symbols-outlined icon-sm">check_circle</span> Brak zgłoszonych utrudnień.</p>
                 </div>
                 <div class="popup-actions">
-                    <button class="btn-report-popup btn-start-report" data-stop="${stopName}">
+                    <button class="btn-report-popup btn-start-report" data-stop="${stopName.replace(/"/g, '&quot;')}">
                         <span class="material-symbols-outlined icon-md">add_alert</span> Zgłoś utrudnienie
                     </button>
                 </div>
@@ -448,9 +493,6 @@
         function openReportPopup(stopName, reportData) {
             const r = reportData.report; 
             const config = EVENT_CONFIG[r.type];
-            const ageMs = Date.now() - r.createdAt;
-            const isFaded = ageMs > FADE_THRESHOLD_MS;
-            
             const confirmsCount = r.confirms || 0;
             const deniesCount = r.denies || 0;
             const userVote = localStorage.getItem(`vote_${r.id}`);
@@ -485,18 +527,16 @@
             stopMarkers[stopName].marker.bindPopup(html).openPopup();
         }
 
-        // Zwraca zgłoszenie, jeśli dany przystanek MIEŚCI SIĘ w zasięgu (5 przystanków)
-        function getActiveReportForStop(stopName) {
+        // UNIWERSALNY PROCESOR: Wylicza logiczny i aktualny stan wszystkich aktywnych zgłoszeń
+        function getProcessedEvents() {
             const now = Date.now();
-            let foundReport = null;
+            const activeEvents = [];
 
             for (const report of Object.values(reports)) {
                 const ageMs = now - report.createdAt;
                 const inactiveMs = now - report.lastActivity;
                 
-                if (ageMs > DELETE_THRESHOLD_MS) continue;
-                // Usuwanie z mapy (i Firebase zaraz) jeśli brak interakcji przez 5 przesunięć
-                if (inactiveMs > KANAR_INACTIVE_DEATH) continue; 
+                if (ageMs > DELETE_THRESHOLD_MS || inactiveMs > KANAR_INACTIVE_DEATH) continue; 
 
                 const route = TRAM_ROUTES[report.line]?.[report.direction];
                 if(!route) continue;
@@ -510,53 +550,51 @@
                     currentIndex = Math.min(startIndex + shifted, route.length - 1);
                 }
 
-                // Obejmuje 5 kolejnych przystanków od aktualnego miejsca
-                const maxEnd = Math.min(currentIndex + 5, route.length);
-                const stopIndex = route.indexOf(stopName);
-
-                if (stopIndex >= currentIndex && stopIndex < maxEnd) {
-                    foundReport = { report: report, currentIndex: currentIndex, route: route };
-                    break; 
-                }
+                activeEvents.push({
+                    report: report,
+                    currentStop: route[currentIndex],
+                    route: route,
+                    currentIndex: currentIndex
+                });
             }
-            return foundReport;
+            return activeEvents;
         }
 
+        function getActiveReportForStop(stopName) {
+            const activeList = getProcessedEvents();
+            for (const item of activeList) {
+                const maxEnd = Math.min(item.currentIndex + 5, item.route.length);
+                const stopIndex = item.route.indexOf(stopName);
+                if (stopIndex >= item.currentIndex && stopIndex < maxEnd) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        // GŁÓWNA FUNKCJA RENDERUJĄCA SADA (MAPA + LIVE FEED)
         function renderNetworkState() {
-            const now = Date.now();
-            
-            // 1. Reset
+            const currentZoom = map.getZoom();
+            const showAllStops = currentZoom >= 14; // Próg LOD: przybliżenie pokazuje infrastrukturę
+            const activeList = getProcessedEvents();
+
+            // 1. Czyszczenie i reset struktur mapy
             for (const [stopName, obj] of Object.entries(stopMarkers)) {
                 obj.marker.setIcon(obj.defaultIcon);
+                if (showAllStops) {
+                    if (!map.hasLayer(obj.marker)) obj.marker.addTo(map);
+                } else {
+                    if (map.hasLayer(obj.marker)) map.removeLayer(obj.marker);
+                }
             }
             activePolylines.forEach(pl => map.removeLayer(pl));
             activePolylines = [];
 
-            // 2. Przeliczenie logiki
-            for (const report of Object.values(reports)) {
-                const inactiveMs = now - report.lastActivity;
-                
-                // Usuń zgłoszenie kompletnie, jeśli minął globalny próg lub próg 5 nieaktywnych przystanków (10 minut od ostatniego potw.)
-                if(now - report.createdAt > DELETE_THRESHOLD_MS || inactiveMs > KANAR_INACTIVE_DEATH) {
-                    remove(ref(db, `reports/${report.id}`));
-                    continue;
-                }
-
-                const route = TRAM_ROUTES[report.line]?.[report.direction];
-                if(!route) continue;
-
-                const startIndex = route.indexOf(report.startStop);
-                if(startIndex === -1) continue;
-
-                let currentIndex = startIndex;
-                if(report.type === 'kanar') {
-                    const shifted = Math.floor((now - report.createdAt) / KANAR_SHIFT_MS);
-                    currentIndex = Math.min(startIndex + shifted, route.length - 1);
-                }
-
-                const config = EVENT_CONFIG[report.type];
-                const isFaded = (now - report.createdAt) > FADE_THRESHOLD_MS;
-                const pulseClass = (report.type === 'kanar' && !isFaded) ? 'pulse' : '';
+            // 2. Rysowanie aktywnych zagrożeń na mapie
+            activeList.forEach(item => {
+                const config = EVENT_CONFIG[item.report.type];
+                const isFaded = (Date.now() - item.report.createdAt) > FADE_THRESHOLD_MS;
+                const pulseClass = (item.report.type === 'kanar' && !isFaded) ? 'pulse' : '';
                 
                 const alertIcon = L.divIcon({
                     className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
@@ -566,31 +604,99 @@
                     iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -20]
                 });
 
-                // Zaznacz obszar (do 5 przystanków), ustaw ikony!
-                const maxEnd = Math.min(currentIndex + 5, route.length);
-                const points = [];
+                const maxEnd = Math.min(item.currentIndex + 5, item.route.length);
+                const polylinePoints = [];
 
-                for(let i = currentIndex; i < maxEnd; i++) {
-                    const affectedStopName = route[i];
-                    points.push(STOPS_COORDS[affectedStopName]);
+                for (let i = item.currentIndex; i < maxEnd; i++) {
+                    const affectedStop = item.route[i];
+                    polylinePoints.push(STOPS_COORDS[affectedStop]);
                     
-                    if(stopMarkers[affectedStopName]) {
-                        stopMarkers[affectedStopName].marker.setIcon(alertIcon);
+                    if (stopMarkers[affectedStop]) {
+                        // Jeśli strefa zagrożenia jest aktywna, marker MUSI być na mapie niezależnie od zoomu!
+                        if (!map.hasLayer(stopMarkers[affectedStop].marker)) {
+                            stopMarkers[affectedStop].marker.addTo(map);
+                        }
+                        stopMarkers[affectedStop].marker.setIcon(alertIcon);
                         
-                        // Odśwież otwarte dymki
-                        if(stopMarkers[affectedStopName].marker.isPopupOpen()) {
-                            openReportPopup(affectedStopName, { report: report, currentIndex: currentIndex });
+                        if (stopMarkers[affectedStop].marker.isPopupOpen()) {
+                            openReportPopup(affectedStop, item);
                         }
                     }
                 }
 
-                if(points.length > 1) {
-                    const polyline = L.polyline(points, {
+                // Rysowanie tras tylko przy zbliżeniu (LOD)
+                if (showAllStops && polylinePoints.length > 1) {
+                    const polyline = L.polyline(polylinePoints, {
                         color: config.color, weight: 6, opacity: 0.7, dashArray: '10, 10', lineJoin: 'round'
                     }).addTo(map);
                     activePolylines.push(polyline);
                 }
+            });
+
+            // 3. Budowanie panelu Live Feed (Odległości GPS)
+            renderProximityFeed(activeList);
+        }
+
+        function renderProximityFeed(activeList) {
+            const container = document.getElementById('proximity-container');
+            
+            if (!userLatLng) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:8px;"><span class="material-symbols-outlined icon-sm" style="animation: spin 2s infinite linear;">sync</span> Oczekiwanie na sygnał GPS pasażera...</div>`;
+                return;
             }
+
+            if (activeList.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--success); font-size:0.9rem; font-weight:800; padding:12px 0;"><span class="material-symbols-outlined icon-sm">check_circle</span> Czysto. Brak zgłoszonych kontroli w mieście.</div>`;
+                return;
+            }
+
+            // Przeliczenie dystansu dla każdego aktywnego elementu
+            const feedData = activeList.map(item => {
+                const stopCoords = STOPS_COORDS[item.currentStop];
+                const distanceMeters = userLatLng.distanceTo(L.latLng(stopCoords));
+                return { ...item, distance: distanceMeters };
+            });
+
+            // Sortowanie: najbliższe utrudnienia na samej górze feedu
+            feedData.sort((a, b) => a.distance - b.distance);
+
+            // Generowanie HTML struktur kart
+            container.innerHTML = '';
+            feedData.forEach(item => {
+                const config = EVENT_CONFIG[item.report.type];
+                const distStr = item.distance < 1000 ? `${Math.round(item.distance)}m` : `${(item.distance / 1000).toFixed(1)}km`;
+                
+                const card = document.createElement('div');
+                card.className = 'alert-card';
+                card.style.borderLeftColor = config.color;
+                
+                card.innerHTML = `
+                    <div class="alert-card-left">
+                        <div class="alert-card-type">
+                            <span class="material-symbols-outlined icon-sm" style="color:${config.color}">${config.icon}</span>
+                            ${config.label} (Linia ${item.report.line})
+                        </div>
+                        <div class="alert-card-stop">Przystanek: ${item.currentStop} • kier. ${item.report.direction}</div>
+                    </div>
+                    <div class="alert-card-distance" style="background-color:${config.color}20; color:${config.color}">
+                        ${distStr} stąd
+                    </div>
+                `;
+
+                // Interaktywne kliknięcie w kartę - Centrowanie na mapie i otwarcie dymku
+                card.addEventListener('click', () => {
+                    const coords = STOPS_COORDS[item.currentStop];
+                    map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 1.2 });
+                    setTimeout(() => {
+                        if(!map.hasLayer(stopMarkers[item.currentStop].marker)) {
+                            stopMarkers[item.currentStop].marker.addTo(map);
+                        }
+                        handleStopClick(item.currentStop);
+                    }, 1300);
+                });
+
+                container.appendChild(card);
+            });
         }
 
 
@@ -692,18 +798,16 @@
             });
         });
 
-        // --- GLOBALNA OBSŁUGA KLIKNIĘĆ (Głosowanie + Otwieranie Formularza) ---
+        // --- GLOBALNA DELEGACJA ZGŁOSZEŃ I GŁOSÓW ---
         let isVoting = false;
         
         document.addEventListener('click', (e) => {
-            // Reagowanie na przycisk dodawania
             const btnReport = e.target.closest('.btn-start-report');
             if (btnReport) {
                 startReportForm(btnReport.dataset.stop);
                 return;
             }
 
-            // Reagowanie na głosowanie
             const btnVote = e.target.closest('.vote-btn');
             if (!btnVote || isVoting) return;
             
@@ -735,16 +839,15 @@
             if (newDenies >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
-                    showToast("delete", "Usunięto zgłoszenie");
+                    showToast("delete", "Usunięto utrudnienie (społeczność)");
                     playSound('sound-cancel');
                     map.closePopup(); 
                 }).finally(() => { isVoting = false; });
             } else {
-                // Jeśli potwierdzono lub odwołano - przedłuża się aktywność (lastActivity = Date.now())
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: Date.now() })
                 .then(() => {
                     if (previousVote !== voteType) {
-                        showToast("update", "Oddano głos");
+                        showToast("update", "Twój głos został zapisany");
                         if (voteType === 'up') playSound('sound-confirm');
                         else if (voteType === 'down') playSound('sound-cancel');
                     }
