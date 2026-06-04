@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -72,17 +73,15 @@
         #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #e2e8f0; }
         .map-crosshair { cursor: crosshair !important; }
 
-        /* JASNY PANEL GŁÓWNY (UI) */
+        /* MINIMALISTYCZNY PANEL DOLNY */
         #ui-panel {
-            position: absolute; bottom: 0; left: 0; width: 100vw; height: 42dvh;
+            position: absolute; bottom: 0; left: 0; width: 100vw; height: auto;
             background: var(--bg-panel); border-top: 3px solid var(--primary);
             z-index: 1000; display: flex; flex-direction: column;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); padding-bottom: max(env(safe-area-inset-bottom), 16px);
         }
 
-        .panel-drag-handle { width: 40px; height: 4px; background: var(--border-color); border-radius: 4px; margin: 12px auto 8px; }
-
-        .panel-header { padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .panel-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
         .panel-header h1 { font-size: 1.15rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: var(--primary-light); color: var(--primary-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
         
@@ -90,12 +89,9 @@
         .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
         .btn-icon:hover, .btn-icon:active { color: var(--primary); background: var(--primary-light); }
 
-        #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; background: var(--bg-solid); }
-        .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 30px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-
         /* CZERWONY FAB */
         #fab-add {
-            position: absolute; bottom: calc(42dvh + 20px); right: 20px;
+            position: absolute; bottom: 90px; right: 20px;
             width: 60px; height: 60px; border-radius: 50%;
             background: var(--primary); color: white;
             border: none; box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
@@ -113,21 +109,6 @@
             display: flex; align-items: center; gap: 8px; white-space: nowrap; transition: transform 0.2s, opacity 0.2s;
         }
         #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-        /* JASNE KARTY ZDARZEŃ */
-        .event-card {
-            background: var(--bg-panel); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;
-            cursor: pointer; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-        .event-card.faded { opacity: 0.6; filter: grayscale(80%); }
-        .map-marker.faded { opacity: 0.6; filter: grayscale(80%); }
-
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .card-title { font-weight: 900; font-size: 1rem; color: var(--text-dark); }
-        .card-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-align: right; line-height: 1.4; }
-        .card-time .fresh { color: var(--success); }
-        .card-time .old { color: var(--danger); }
-        .card-location { font-size: 0.85rem; color: var(--text-dark); font-weight: 600; margin-bottom: 12px; }
 
         /* JASNY MODAL ZGŁOSZENIA */
         .modal-overlay {
@@ -160,6 +141,7 @@
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
+        .map-marker.faded { opacity: 0.6; filter: grayscale(80%); }
         .leaflet-popup-content-wrapper { background: var(--bg-panel); border-radius: var(--radius-md); padding: 0; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
         .leaflet-popup-content { margin: 0; min-width: 260px; }
         .leaflet-popup-tip { background: var(--bg-panel); border: 1px solid var(--border-color); border-top: none; border-left: none; }
@@ -168,6 +150,9 @@
         .popup-body { padding: 14px 16px; font-size: 14px; color: var(--text-dark); line-height: 1.6; font-weight: 600; }
         .popup-actions { display: flex; padding: 12px; gap: 12px; background: var(--bg-solid); border-top: 1px solid var(--border-color); justify-content: center; }
         
+        .card-time .fresh { color: var(--success); }
+        .card-time .old { color: var(--danger); }
+
         /* PRZYCISKI GŁOSOWANIA (Tylko Ikony) */
         .vote-btn {
             flex: 1; padding: 12px; border-radius: var(--radius-md); border: 2px solid var(--border-color);
@@ -188,11 +173,8 @@
         @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
 
         @media (min-width: 768px) {
-            #ui-panel { width: 400px; height: 100dvh; border-right: 2px solid var(--border-color); border-top: none; }
-            .panel-drag-handle { display: none; }
             .modal-content { border-radius: var(--radius-md); margin-bottom: 50px; border: 2px solid var(--primary); }
             .modal-overlay { align-items: center; }
-            #fab-add { bottom: 30px; right: calc(100vw - 430px); } 
             L.control.zoom { display: block; }
         }
     </style>
@@ -237,7 +219,6 @@
         </button>
 
         <div id="ui-panel">
-            <div class="panel-drag-handle"></div>
             <div class="panel-header">
                 <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> Kanarek</h1>
                 <div style="display: flex; gap: 8px; align-items: center;">
@@ -245,12 +226,6 @@
                         <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
                     </button>
                     <span class="badge">Gorzów Wlkp.</span>
-                </div>
-            </div>
-            <div id="events-list">
-                <div class="empty-state">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--border-color);">sync</span>
-                    Ładowanie danych...
                 </div>
             </div>
         </div>
@@ -577,9 +552,6 @@
         });
 
         function renderUI() {
-            const listContainer = document.getElementById('events-list');
-            listContainer.innerHTML = '';
-            
             const now = Date.now();
 
             for (let id in leafletMarkers) {
@@ -590,16 +562,7 @@
             }
 
             const reportsArray = Object.values(reports);
-            if (reportsArray.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-symbols-outlined" style="font-size: 64px; color: var(--border-color);">verified_user</span>
-                        Brak aktywnych zgłoszeń.
-                    </div>`;
-                return;
-            }
-
-            reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
+            if (reportsArray.length === 0) return;
 
             reportsArray.forEach(report => {
                 const createdTime = report.createdAt || report.lastConfirmed || now;
@@ -624,39 +587,6 @@
                 const deniesCount = report.denies || 0;
                 const confirmsCount = report.confirms || 0;
 
-                const card = document.createElement('div');
-                card.className = `event-card ${fadeClass}`;
-                card.onclick = () => {
-                    map.setView([report.lat - 0.003, report.lng], 15);
-                    if (leafletMarkers[report.id]) leafletMarkers[report.id].openPopup();
-                };
-                
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-title icon-text-gap" style="color: ${config.color}">
-                            <span class="material-symbols-outlined icon-md">${config.icon}</span> 
-                            ${config.label} (${report.line})
-                        </span>
-                        <div class="card-time">
-                            Dodano: ${relativeCreatedStr}<br>
-                            <span class="${timeStatusClass}">Aktywność: ${relativeActivityStr}</span>
-                        </div>
-                    </div>
-                    <div class="card-location icon-text-gap">
-                        <span class="material-symbols-outlined icon-sm">signpost</span> 
-                        ${report.location}
-                    </div>
-                    <div style="display: flex; gap: 16px; margin-top: 8px;">
-                        <span class="icon-text-gap" style="color: var(--success); font-weight: 800; font-size: 0.9rem;">
-                            <span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}
-                        </span>
-                        <span class="icon-text-gap" style="color: var(--danger); font-weight: 800; font-size: 0.9rem;">
-                            <span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}
-                        </span>
-                    </div>
-                `;
-                listContainer.appendChild(card);
-
                 const popupHtml = `
                     <div class="popup-header" style="background-color: ${config.color}">
                         <span class="icon-text-gap">
@@ -671,7 +601,16 @@
                         </div>
                         <div style="font-size: 12px; color: var(--text-muted); display:flex; justify-content: space-between;">
                             <span>Dodano: ${relativeCreatedStr}</span>
-                            <span class="${timeStatusClass}" style="font-weight: 800;">Aktywność: ${relativeActivityStr}</span>
+                            <span class="card-time"><span class="${timeStatusClass}" style="font-weight: 800;">Aktywność: ${relativeActivityStr}</span></span>
+                        </div>
+                        
+                        <div style="display: flex; gap: 16px; margin-top: 12px; justify-content: center;">
+                            <span class="icon-text-gap" style="color: var(--success); font-weight: 800; font-size: 0.9rem;">
+                                <span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}
+                            </span>
+                            <span class="icon-text-gap" style="color: var(--danger); font-weight: 800; font-size: 0.9rem;">
+                                <span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}/3
+                            </span>
                         </div>
                     </div>
                     <div class="popup-actions">
@@ -681,7 +620,6 @@
                         
                         <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${report.id}" data-vote="down" title="Zgłoś nieobecność">
                             <span class="material-symbols-outlined icon-lg">thumb_down</span> 
-                            <span class="deny-counter">${deniesCount}/3</span>
                         </button>
                     </div>
                 `;
