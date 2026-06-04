@@ -85,6 +85,10 @@
         .panel-header { padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
         .panel-header h1 { font-size: 1.15rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: var(--primary-light); color: var(--primary-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
+        
+        /* PRZYCISK WYCISZANIA */
+        .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
+        .btn-icon:hover, .btn-icon:active { color: var(--primary); background: var(--primary-light); }
 
         #events-list { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; background: var(--bg-solid); }
         .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 30px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -199,6 +203,10 @@
 </head>
 <body>
 
+    <audio id="sound-confirm" src="potwierdzono.mp3" preload="auto"></audio>
+    <audio id="sound-cancel" src="odwolano.mp3" preload="auto"></audio>
+    <audio id="sound-notify" src="powiadomienie.mp3" preload="auto"></audio>
+
     <div id="city-selector-overlay">
         <div class="city-card">
             <h1><span class="material-symbols-outlined icon-lg">radar</span> MZK Radar</h1>
@@ -236,7 +244,12 @@
             <div class="panel-drag-handle"></div>
             <div class="panel-header">
                 <h1><span class="material-symbols-outlined icon-lg">directions_bus</span> MZK Radar</h1>
-                <span class="badge">Gorzów Wlkp.</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="btn-mute" class="btn-icon" title="Wycisz dźwięki">
+                        <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
+                    </button>
+                    <span class="badge">Gorzów Wlkp.</span>
+                </div>
             </div>
             <div id="events-list">
                 <div class="empty-state">
@@ -292,7 +305,6 @@
             appId: "1:273151127719:web:0f4477fafe77248e312b82"
         };
 
-        // Kolorystyka dopasowana do jasnego motywu
         const EVENT_CONFIG = {
             kanar: { label: 'Kanar', color: '#dc2626', icon: 'confirmation_number' },
             awaria: { label: 'Awaria', color: '#7f1d1d', icon: 'build' },
@@ -301,7 +313,6 @@
         };
 
         const ALLOWED_BOUNDS = L.latLngBounds([52.6500, 15.0000], [52.8200, 15.4200]);
-
         const FADE_THRESHOLD_MS = 15 * 60 * 1000;
         const DELETE_THRESHOLD_MS = 25 * 60 * 1000;
 
@@ -312,12 +323,38 @@
         let isAddingMode = false;
         let map;
 
+        // NOWE ZMIENNE DO DŹWIĘKÓW
+        let isMuted = false;
+        const btnMute = document.getElementById('btn-mute');
+        const muteIcon = document.getElementById('mute-icon');
+
+        // Obsługa wyciszania
+        btnMute.addEventListener('click', () => {
+            isMuted = !isMuted;
+            muteIcon.textContent = isMuted ? 'volume_off' : 'volume_up';
+            if (isMuted) {
+                showToast("volume_off", "Dźwięki wyciszone");
+            } else {
+                showToast("volume_up", "Dźwięki włączone");
+            }
+        });
+
+        // Bezpieczna funkcja odtwarzająca dźwięk
+        function playSound(audioId) {
+            if (isMuted) return;
+            const audio = document.getElementById(audioId);
+            if (audio) {
+                audio.currentTime = 0; // Przewiń do początku, jeśli grał
+                audio.play().catch(e => console.log("Zablokowano autoodtwarzanie dźwięku"));
+            }
+        }
+
         function showToast(icon, message, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
             if(isError) {
-                toast.style.background = '#0f172a'; // Ciemne dla błędów w jasnym motywie
+                toast.style.background = '#0f172a';
                 toast.style.borderColor = '#000000';
             }
             toast.innerHTML = `<span class="material-symbols-outlined icon-md">${icon}</span> ${message}`;
@@ -325,7 +362,6 @@
             setTimeout(() => toast.remove(), 4000);
         }
 
-        // Precyzyjna funkcja przeliczająca czas na minuty
         function getTimeAgo(timestamp) {
             const diffMs = Date.now() - timestamp;
             const diffMins = Math.floor(diffMs / 60000);
@@ -351,7 +387,6 @@
             
             L.control.zoom({ position: 'topright' }).addTo(map);
             
-            // JASNA MAPA (CartoDB Light)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
                 maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO'
             }).addTo(map);
@@ -368,7 +403,7 @@
                 
                 setInterval(() => {
                     if(Object.keys(reports).length > 0) renderUI();
-                }, 15000); // Odświeżanie UI co 15 sekund dla dokładniejszego licznika
+                }, 15000); 
 
             } catch (error) {
                 showToast("wifi_off", "Brak połączenia", true);
@@ -404,7 +439,7 @@
                 if (isAddingMode) {
                     document.getElementById('map').classList.add('map-crosshair');
                     banner.classList.add('active');
-                    fabAdd.style.background = '#0f172a'; // Zmiana na ciemny podczas dodawania
+                    fabAdd.style.background = '#0f172a';
                     fabIcon.textContent = 'close';
                 } else {
                     exitAddingMode();
@@ -464,14 +499,18 @@
                 id: newReportRef.key,
                 lat: tempCoords.lat, lng: tempCoords.lng,
                 type, line, location: direction,
-                createdAt: nowTimestamp,     // Zapis dokładnego czasu dodania
-                lastActivity: nowTimestamp,  // Zapis czasu aktywności
+                createdAt: nowTimestamp,     
+                lastActivity: nowTimestamp,  
                 confirms: 1, denies: 0
             }).then(() => {
                 localStorage.setItem(`vote_${newReportRef.key}`, 'up');
                 modal.style.display = 'none';
                 showToast("done", "Zgłoszono poprawnie");
                 map.panTo([tempCoords.lat - 0.003, tempCoords.lng]);
+                
+                // Odtworzenie dźwięku zgłoszenia
+                playSound('sound-notify');
+                
             }).catch(() => {
                 showToast("error", "Błąd zapisu", true);
             }).finally(() => {
@@ -498,7 +537,6 @@
             let newConfirms = report.confirms || 0;
             let newDenies = report.denies || 0;
             
-            // Każde nowe kliknięcie (up/down) odświeża czas aktywności
             let updatedLastActivity = report.lastActivity || report.lastConfirmed || Date.now();
 
             if (previousVote === voteType) {
@@ -512,7 +550,7 @@
                 if (voteType === 'up') { newConfirms++; }
                 if (voteType === 'down') { newDenies++; }
                 
-                updatedLastActivity = Date.now(); // Aktualizacja czasu przy głosowaniu!
+                updatedLastActivity = Date.now();
                 localStorage.setItem(storageKey, voteType);
             }
 
@@ -520,12 +558,21 @@
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
                     showToast("delete", "Usunięto (3 odrzucenia)");
+                    
+                    // Odtworzenie dźwięku odwołania
+                    playSound('sound-cancel');
+                    
                 }).finally(() => { isVoting = false; });
             } else {
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: updatedLastActivity })
                 .then(() => {
                     if (previousVote !== voteType) {
-                        showToast("update", "Potwierdzono obecność");
+                        showToast("update", "Zaktualizowano zgłoszenie");
+                        
+                        // Odtworzenie dźwięku potwierdzenia TYLKO dla głosu na tak
+                        if (voteType === 'up') {
+                            playSound('sound-confirm');
+                        }
                     }
                 }).finally(() => { isVoting = false; });
             }
@@ -557,13 +604,11 @@
             reportsArray.sort((a,b) => ((b.confirms || 0) - (b.denies || 0)) - ((a.confirms || 0) - (a.denies || 0)));
 
             reportsArray.forEach(report => {
-                // Rozróżnienie czasu dodania od czasu aktywności (kompatybilność wsteczna z lastConfirmed)
                 const createdTime = report.createdAt || report.lastConfirmed || now;
                 const lastActivityTime = report.lastActivity || report.lastConfirmed || now;
                 
                 const ageMs = now - lastActivityTime;
                 
-                // Usuwanie starszego niż 25 min braku aktywności
                 if (ageMs > DELETE_THRESHOLD_MS) {
                     remove(ref(db, `reports/${report.id}`));
                     return; 
