@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -249,9 +250,8 @@
             default: { label: 'Przystanek', color: '#0f172a', icon: 'tram' }
         };
 
-        // BAZA PRZYSTANKÓW (Współrzędne)
         const STOPS_COORDS = {
-            "Fieldorfa\"Nila\"": [52.763085,15.276138], // Użyto współrzędnych Jedwabnicza
+            "Fieldorfa\"Nila\"": [52.763085,15.276138],
             "Szarych Szeregów": [52.760357,15.272396],
             "Rondo Gdańskie": [52.757420,15.268347],
             "Medyk": [52.754433,15.264330],
@@ -286,10 +286,9 @@
             "Piaski": [52.753106,15.232144]
         };
 
-        // TOPOLOGIA LINII TRAMWAJOWYCH (Kolejność przystanków)
         const TRAM_ROUTES = {
             "1": {
-                "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpijska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
+                "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpiejska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
                 "Wieprzyce PKP": ["Fieldorfa\"Nila\"", "Szarych Szeregów", "Rondo Gdańskie", "Medyk", "Walczaka Szpital", "Stilon", "Park Kopernika", "Pomorska", "Rondo Solidarności", "Rondo Santockie", "CEZiB", "Pl. Staromiejski", "Wełniany Rynek", "Katedra", "Dworcowa", "Jancarza", "Żelazna", "Olimpijska", "Os. Słoneczne", "Pl. Słoneczny", "Tartaczna", "Zajezdnia Kostrzyńska", "Wieprzyce PKP"]
             },
             "2": {
@@ -309,19 +308,18 @@
         const ALLOWED_BOUNDS = L.latLngBounds([52.6800, 15.1000], [52.8200, 15.4200]);
         const FADE_THRESHOLD_MS = 15 * 60 * 1000;
         const DELETE_THRESHOLD_MS = 30 * 60 * 1000;
-        const KANAR_SHIFT_MS = 2 * 60 * 1000; // Co 2 minuty kanar zmienia przystanek
+        const KANAR_SHIFT_MS = 2 * 60 * 1000; // Co 2 minuty kanar przesuwa się w logice
+        const KANAR_INACTIVE_DEATH = 5 * KANAR_SHIFT_MS; // 10 minut bez potwierdzenia (5 przystanków) usuwa z bazy
 
         let db, reportsRef;
         let reports = {};
         let map;
         
-        let stopMarkers = {}; // Obiekty Leaflet markerów
-        let activePolylines = []; // Linie tras zaznaczone na mapie
-        
-        // Stan formularza
+        let stopMarkers = {}; 
+        let activePolylines = []; 
         let selectedStopForReport = null;
-
         let isMuted = false;
+
         const btnMute = document.getElementById('btn-mute');
         const muteIcon = document.getElementById('mute-icon');
 
@@ -377,7 +375,6 @@
                 maxZoom: 19, attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Inicjalizacja bazy przystanków na mapie
             initStopMarkers();
 
             try {
@@ -390,7 +387,6 @@
                     renderNetworkState();
                 });
                 
-                // Główna pętla przeliczająca pozycje kanarów co 10 sekund
                 setInterval(renderNetworkState, 10000); 
 
             } catch (error) {
@@ -398,11 +394,8 @@
             }
         }
 
-        // --- Logika sieci i dynamicznych przesunięć ---
-
         function initStopMarkers() {
             for (const [stopName, coords] of Object.entries(STOPS_COORDS)) {
-                // Tworzymy domyślny marker przystanku
                 const icon = L.divIcon({
                     className: 'map-marker',
                     html: `<div style="background-color:#0f172a; width:100%; height:100%; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;">
@@ -412,18 +405,13 @@
                 });
 
                 const marker = L.marker(coords, { icon: icon }).addTo(map);
-                
-                // Event kliknięcia w przystanek
                 marker.on('click', () => { handleStopClick(stopName); });
-                
                 stopMarkers[stopName] = { marker: marker, defaultIcon: icon };
             }
         }
 
         function handleStopClick(stopName) {
-            // Szukamy, czy na tym przystanku jest AKTYWNE ZGŁOSZENIE (po przeliczeniu algorytmu)
             const activeReport = getActiveReportForStop(stopName);
-
             if (activeReport) {
                 openReportPopup(stopName, activeReport);
             } else {
@@ -432,7 +420,6 @@
         }
 
         function openDefaultStopPopup(stopName) {
-            // Znajdź jakie linie tu jeżdżą
             let passingLines = [];
             for (const [line, directions] of Object.entries(TRAM_ROUTES)) {
                 for (const route of Object.values(directions)) {
@@ -451,7 +438,7 @@
                     <p style="font-size: 12px; color: var(--success);"><span class="material-symbols-outlined icon-sm">check_circle</span> Brak zgłoszonych utrudnień.</p>
                 </div>
                 <div class="popup-actions">
-                    <button class="btn-report-popup" onclick="window.startReportForm('${stopName}')">
+                    <button class="btn-report-popup btn-start-report" data-stop="${stopName}">
                         <span class="material-symbols-outlined icon-md">add_alert</span> Zgłoś utrudnienie
                     </button>
                 </div>
@@ -460,7 +447,7 @@
         }
 
         function openReportPopup(stopName, reportData) {
-            const r = reportData.report; // Oryginalne dane z DB
+            const r = reportData.report; 
             const config = EVENT_CONFIG[r.type];
             const ageMs = Date.now() - r.createdAt;
             const isFaded = ageMs > FADE_THRESHOLD_MS;
@@ -468,14 +455,6 @@
             const confirmsCount = r.confirms || 0;
             const deniesCount = r.denies || 0;
             const userVote = localStorage.getItem(`vote_${r.id}`);
-
-            // Jeśli to kanar, pokazujemy ile przystanków już przejechał
-            let extraInfo = '';
-            if (r.type === 'kanar' && reportData.shiftedStops > 0) {
-                extraInfo = `<div style="font-size:12px; background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:4px; margin-bottom:8px; font-weight:700;">
-                                Oszacowano na podstawie czasu: Przesunięto o ${reportData.shiftedStops} przystanków od momentu zgłoszenia.
-                             </div>`;
-            }
 
             const html = `
                 <div class="popup-header" style="background-color: ${config.color}">
@@ -486,9 +465,9 @@
                     <div class="icon-text-gap" style="margin-bottom: 8px;">
                         <span class="material-symbols-outlined icon-sm">signpost</span> Kierunek: ${r.direction}
                     </div>
-                    ${extraInfo}
                     <div style="font-size: 12px; color: var(--text-muted); display:flex; justify-content: space-between;">
                         <span>Dodano: ${getTimeAgo(r.createdAt)}</span>
+                        <span>Akt: ${getTimeAgo(r.lastActivity)}</span>
                     </div>
                     <div style="display: flex; gap: 16px; margin-top: 12px; justify-content: center;">
                         <span class="icon-text-gap" style="color: var(--success); font-weight: 800;"><span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}</span>
@@ -496,10 +475,10 @@
                     </div>
                 </div>
                 <div class="popup-actions">
-                    <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" onclick="window.voteReport('${r.id}', 'up')" title="Potwierdzam">
+                    <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${r.id}" data-vote="up" title="Potwierdzam">
                         <span class="material-symbols-outlined icon-lg">thumb_up</span>
                     </button>
-                    <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" onclick="window.voteReport('${r.id}', 'down')" title="Odwołaj">
+                    <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${r.id}" data-vote="down" title="Odwołaj">
                         <span class="material-symbols-outlined icon-lg">thumb_down</span> 
                     </button>
                 </div>
@@ -507,13 +486,18 @@
             stopMarkers[stopName].marker.bindPopup(html).openPopup();
         }
 
-        // Pobiera przeliczony status dla danego przystanku (czy w tym momencie coś tu jest)
+        // Zwraca zgłoszenie, jeśli dany przystanek MIEŚCI SIĘ w zasięgu (5 przystanków)
         function getActiveReportForStop(stopName) {
             const now = Date.now();
             let foundReport = null;
 
             for (const report of Object.values(reports)) {
-                if(now - report.createdAt > DELETE_THRESHOLD_MS) continue;
+                const ageMs = now - report.createdAt;
+                const inactiveMs = now - report.lastActivity;
+                
+                if (ageMs > DELETE_THRESHOLD_MS) continue;
+                // Usuwanie z mapy (i Firebase zaraz) jeśli brak interakcji przez 5 przesunięć
+                if (inactiveMs > KANAR_INACTIVE_DEATH) continue; 
 
                 const route = TRAM_ROUTES[report.line]?.[report.direction];
                 if(!route) continue;
@@ -522,21 +506,17 @@
                 if(startIndex === -1) continue;
 
                 let currentIndex = startIndex;
-                let shiftedStops = 0;
-
-                // Algorytm przesuwania Kanara
                 if(report.type === 'kanar') {
-                    shiftedStops = Math.floor((now - report.createdAt) / KANAR_SHIFT_MS);
-                    currentIndex = startIndex + shiftedStops;
-                    
-                    // Jeśli dojechał do pętli, zatrzymuje się na ostatnim przystanku
-                    if(currentIndex >= route.length) {
-                        currentIndex = route.length - 1;
-                    }
+                    const shifted = Math.floor(ageMs / KANAR_SHIFT_MS);
+                    currentIndex = Math.min(startIndex + shifted, route.length - 1);
                 }
 
-                if(route[currentIndex] === stopName) {
-                    foundReport = { report: report, shiftedStops: shiftedStops, currentIndex: currentIndex, route: route };
+                // Obejmuje 5 kolejnych przystanków od aktualnego miejsca
+                const maxEnd = Math.min(currentIndex + 5, route.length);
+                const stopIndex = route.indexOf(stopName);
+
+                if (stopIndex >= currentIndex && stopIndex < maxEnd) {
+                    foundReport = { report: report, currentIndex: currentIndex, route: route };
                     break; 
                 }
             }
@@ -546,18 +526,19 @@
         function renderNetworkState() {
             const now = Date.now();
             
-            // 1. Reset wszystkich markerów do stanu domyślnego
+            // 1. Reset
             for (const [stopName, obj] of Object.entries(stopMarkers)) {
                 obj.marker.setIcon(obj.defaultIcon);
             }
-            
-            // 2. Usunięcie starych linii tras
             activePolylines.forEach(pl => map.removeLayer(pl));
             activePolylines = [];
 
-            // 3. Przeliczenie aktywnych zgłoszeń
+            // 2. Przeliczenie logiki
             for (const report of Object.values(reports)) {
-                if(now - report.createdAt > DELETE_THRESHOLD_MS) {
+                const inactiveMs = now - report.lastActivity;
+                
+                // Usuń zgłoszenie kompletnie, jeśli minął globalny próg lub próg 5 nieaktywnych przystanków (10 minut od ostatniego potw.)
+                if(now - report.createdAt > DELETE_THRESHOLD_MS || inactiveMs > KANAR_INACTIVE_DEATH) {
                     remove(ref(db, `reports/${report.id}`));
                     continue;
                 }
@@ -574,37 +555,37 @@
                     currentIndex = Math.min(startIndex + shifted, route.length - 1);
                 }
 
-                const currentStopName = route[currentIndex];
                 const config = EVENT_CONFIG[report.type];
+                const isFaded = (now - report.createdAt) > FADE_THRESHOLD_MS;
+                const pulseClass = (report.type === 'kanar' && !isFaded) ? 'pulse' : '';
                 
-                // Ustawienie ostrzegawczej ikony na przystanku docelowym
-                if(stopMarkers[currentStopName]) {
-                    const isFaded = (now - report.createdAt) > FADE_THRESHOLD_MS;
-                    const pulseClass = (report.type === 'kanar' && !isFaded) ? 'pulse' : '';
-                    const alertIcon = L.divIcon({
-                        className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
-                        html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                   <span class="material-symbols-outlined icon-md">${config.icon}</span>
-                               </div>`,
-                        iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -20]
-                    });
-                    stopMarkers[currentStopName].marker.setIcon(alertIcon);
+                const alertIcon = L.divIcon({
+                    className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
+                    html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                               <span class="material-symbols-outlined icon-md">${config.icon}</span>
+                           </div>`,
+                    iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -20]
+                });
+
+                // Zaznacz obszar (do 5 przystanków), ustaw ikony!
+                const maxEnd = Math.min(currentIndex + 5, route.length);
+                const points = [];
+
+                for(let i = currentIndex; i < maxEnd; i++) {
+                    const affectedStopName = route[i];
+                    points.push(STOPS_COORDS[affectedStopName]);
                     
-                    // Odśwież popup jeśli jest otwarty (żeby zaktualizował upływ czasu/pozycję)
-                    if(stopMarkers[currentStopName].marker.isPopupOpen()) {
-                        openReportPopup(currentStopName, { report, shiftedStops: currentIndex - startIndex });
+                    if(stopMarkers[affectedStopName]) {
+                        stopMarkers[affectedStopName].marker.setIcon(alertIcon);
+                        
+                        // Odśwież otwarte dymki
+                        if(stopMarkers[affectedStopName].marker.isPopupOpen()) {
+                            openReportPopup(affectedStopName, { report: report, currentIndex: currentIndex });
+                        }
                     }
                 }
 
-                // Rysowanie czerwonej linii na trasie od obecnego przystanku przez kolejne 4 (lub do końca)
-                if(currentIndex < route.length - 1) {
-                    const points = [];
-                    // Rysuj na najbliższe 5 przystanków w przód, by ostrzec kierunek
-                    const maxEnd = Math.min(currentIndex + 5, route.length);
-                    for(let i = currentIndex; i < maxEnd; i++) {
-                        points.push(STOPS_COORDS[route[i]]);
-                    }
-                    
+                if(points.length > 1) {
                     const polyline = L.polyline(points, {
                         color: config.color, weight: 6, opacity: 0.7, dashArray: '10, 10', lineJoin: 'round'
                     }).addTo(map);
@@ -614,25 +595,21 @@
         }
 
 
-        // --- LOGIKA FORMULARZA ZGŁOSZEŃ ---
-
+        // --- FORMULARZ ZGŁOSZEŃ ---
         const modal = document.getElementById('modalOverlay');
         const inputLine = document.getElementById('event-line');
         const inputDir = document.getElementById('event-direction');
         const btnSubmit = document.getElementById('btn-submit');
 
-        // Funkcja globalna dla popupa
-        window.startReportForm = (stopName) => {
+        function startReportForm(stopName) {
             selectedStopForReport = stopName;
             document.getElementById('modal-stop-name').textContent = stopName;
             
-            // Czyszczenie formularza
             inputLine.innerHTML = '<option value="" disabled selected>Wybierz linię...</option>';
             inputDir.innerHTML = '<option value="" disabled selected>Najpierw wybierz linię...</option>';
             inputDir.disabled = true;
             btnSubmit.disabled = true;
 
-            // Znalezienie dostępnych linii dla TEGO przystanku
             let availableLines = [];
             for (const [line, directions] of Object.entries(TRAM_ROUTES)) {
                 let stopExistsOnLine = false;
@@ -650,9 +627,8 @@
 
             stopMarkers[stopName].marker.closePopup();
             modal.style.display = 'flex';
-        };
+        }
 
-        // Kaskadowe wypełnianie kierunków po wybraniu linii (tylko poprawne kierunki!)
         inputLine.addEventListener('change', () => {
             const line = inputLine.value;
             inputDir.innerHTML = '<option value="" disabled selected>Wybierz kierunek...</option>';
@@ -661,7 +637,6 @@
                 inputDir.disabled = false;
                 for (const [dirName, routeArray] of Object.entries(TRAM_ROUTES[line])) {
                     const stopIndex = routeArray.indexOf(selectedStopForReport);
-                    // Kierunek jest poprawny tylko, jeśli przystanek jest na trasie i NIE JEST ostatnim przystankiem (bo z ostatniego się nie jedzie dalej)
                     if (stopIndex !== -1 && stopIndex < routeArray.length - 1) {
                         let opt = document.createElement('option');
                         opt.value = dirName; opt.textContent = `Kierunek: ${dirName}`;
@@ -699,7 +674,7 @@
                 type: type,
                 line: inputLine.value,
                 direction: inputDir.value,
-                startStop: selectedStopForReport, // Przypisujemy wydarzenie do startowego przystanku
+                startStop: selectedStopForReport,
                 createdAt: now,
                 lastActivity: now,
                 confirms: 1, denies: 0
@@ -709,7 +684,6 @@
                 showToast("done", "Zgłoszono pomyślnie");
                 playSound('sound-notify');
                 
-                // Centrowanie mapy na zdarzenie
                 const coords = STOPS_COORDS[selectedStopForReport];
                 if(coords) map.panTo([coords[0] - 0.005, coords[1]]);
             }).catch(() => {
@@ -719,12 +693,25 @@
             });
         });
 
-        // --- GŁOSOWANIE ---
+        // --- GLOBALNA OBSŁUGA KLIKNIĘĆ (Głosowanie + Otwieranie Formularza) ---
         let isVoting = false;
-        window.voteReport = (id, voteType) => {
-            if(isVoting) return;
+        
+        document.addEventListener('click', (e) => {
+            // Reagowanie na przycisk dodawania
+            const btnReport = e.target.closest('.btn-start-report');
+            if (btnReport) {
+                startReportForm(btnReport.dataset.stop);
+                return;
+            }
+
+            // Reagowanie na głosowanie
+            const btnVote = e.target.closest('.vote-btn');
+            if (!btnVote || isVoting) return;
+            
+            const id = btnVote.dataset.id;
+            const voteType = btnVote.dataset.vote;
             const report = reports[id];
-            if(!report) return;
+            if (!report) return;
 
             isVoting = true;
             const storageKey = `vote_${id}`;
@@ -751,9 +738,10 @@
                     localStorage.removeItem(storageKey);
                     showToast("delete", "Usunięto zgłoszenie");
                     playSound('sound-cancel');
-                    map.closePopup(); // Zamknięcie dymku po usunięciu
+                    map.closePopup(); 
                 }).finally(() => { isVoting = false; });
             } else {
+                // Jeśli potwierdzono lub odwołano - przedłuża się aktywność (lastActivity = Date.now())
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: Date.now() })
                 .then(() => {
                     if (previousVote !== voteType) {
@@ -763,7 +751,7 @@
                     }
                 }).finally(() => { isVoting = false; });
             }
-        };
+        });
 
     </script>
 </body>
