@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +11,7 @@
 
     <style>
         :root {
-            /* Klasyczne, mocne kolory w stylu Yanosika */
+            var-primary: #da251d;         
             --primary: #da251d;         
             --primary-dark: #b31c15;    
             --primary-light: #fbe9e8;   
@@ -21,11 +20,11 @@
             --warning: #f57f17;
             --bg-solid: #e0e0e0;        
             --bg-panel: #ffffff;        
-            --nav-bg: #1b2a3a;          /* Granatowy pasek nawigacyjny */
+            --nav-bg: #1b2a3a;          
             --border-color: #cccccc;    
             --text-dark: #222222;       
             --text-muted: #555555;      
-            --radius-md: 6px;           /* Klasyczne, małe zaokrąglenia */
+            --radius-md: 6px;           
             --shadow-classic: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
@@ -79,6 +78,7 @@
         .panel-header { 
             background: var(--nav-bg); color: #ffffff;
             padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; 
+            padding-bottom: max(env(safe-area-inset-bottom), 12px); /* Obsługa dolnego paska na iPhone w nowym układzie */
         }
         .panel-header h1 { font-size: 1.2rem; font-weight: bold; margin: 0; display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: #334455; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; border: 1px solid #445566; }
@@ -86,7 +86,9 @@
         .btn-icon { background: transparent; border: none; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 6px; transition: 0.2s; }
         .btn-icon:active { opacity: 0.7; }
 
-        /* SEKCJA RADARU ZBLIŻENIOWEGO */
+        /* UKRYTY STARY RADAR DOLNY ZGODNIE Z ZASADĄ "NIC NIE USUWAĆ" */
+        #proximity-container-wrapper { display: none; }
+        
         #proximity-container {
             background: #ffffff;
             display: flex; flex-direction: column; gap: 0;
@@ -100,7 +102,6 @@
         }
         .proximity-title .badge-scan { display: inline-flex; align-items: center; gap: 4px; color: #0d47a1; font-size: 0.7rem; font-weight: bold; }
         
-        /* KLASYCZNE KARTY ALERTÓW (Lista) */
         .alert-card {
             display: flex; align-items: center; justify-content: space-between;
             background: #ffffff; padding: 12px 16px; 
@@ -117,10 +118,41 @@
             display: flex; align-items: center; gap: 4px;
         }
 
-        /* KLASYCZNY MODAL ZGŁOSZEŃ */
+        /* NOWY: GÓRNY RADAR POWIADOMIEŃ */
+        #top-radar-banner {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            background: #ffffff; border-left: 6px solid var(--warning);
+            padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 2000; display: none; align-items: center; gap: 12px; width: 90%; max-width: 400px; cursor: pointer;
+        }
+        #top-radar-banner.visible { display: flex; animation: slideDown 0.3s forwards; }
+        @keyframes slideDown { from{opacity:0; transform:translate(-50%, -20px);} to{opacity:1; transform:translate(-50%, 0);} }
+
+        /* PRZYCISK FAB DO ZGŁASZANIA (+) */
+        #fab-add {
+            position: absolute; bottom: 80px; right: 20px;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--primary); color: white;
+            border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            z-index: 1001; cursor: pointer; display: flex; justify-content: center; align-items: center;
+            transition: 0.2s;
+        }
+        #fab-add:active { background: var(--primary-dark); transform: scale(0.95); }
+        
+        #instruction-banner {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: var(--nav-bg); color: white; padding: 10px 20px;
+            border-radius: 4px; font-weight: bold; font-size: 0.95rem; border: 1px solid #445566;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1001; opacity: 0; pointer-events: none;
+            display: flex; align-items: center; gap: 8px; white-space: nowrap; transition: 0.3s;
+        }
+        #instruction-banner.active { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* KLASYCZNY MODAL (Zgłoszenia / Ustawienia) */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; padding: 16px;
+            background: rgba(0, 0, 0, 0.6); z-index: 2500; justify-content: center; align-items: center; padding: 16px;
         }
         .modal-content {
             background: #ffffff; width: 100%; max-width: 400px;
@@ -146,6 +178,10 @@
         .btn-cancel { background: #e0e0e0; color: var(--text-dark); }
         .btn-submit { background: var(--primary); color: white; }
         .btn-submit:not(:disabled):active { background: var(--primary-dark); }
+
+        /* USTAWIENIA */
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #eee; }
+        .settings-label { font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
 
         /* SOLIDNE MARKERY MAPY */
         .map-marker {
@@ -180,7 +216,7 @@
         .vote-btn.active-down { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
 
         /* TOAST - PROSTY I CZYTELNY */
-        #toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; }
+        #toast-container { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
         .toast { background: #323232; color: white; padding: 12px 16px; border-radius: 4px; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: toastEnter 0.2s forwards; display: flex; align-items: center; gap: 8px; }
         @keyframes toastEnter { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -211,24 +247,37 @@
     <div id="app-container" style="display: none;">
         <div id="map"></div>
         <div id="toast-container"></div>
+
+        <div id="instruction-banner">
+            <span class="material-symbols-outlined icon-md">touch_app</span> Wybierz przystanek na mapie
+        </div>
+        
+        <button id="fab-add">
+            <span class="material-symbols-outlined icon-lg">add</span>
+        </button>
+
+        <div id="top-radar-banner">
+            </div>
         
         <div id="ui-panel">
             <div class="panel-header">
                 <h1><span class="material-symbols-outlined icon-lg">radar</span>Kanarek</h1>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <button id="btn-mute" class="btn-icon" title="Wycisz dźwięki">
-                        <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
-                    </button>
                     <span class="badge">Gorzów</span>
+                    <button id="btn-settings" class="btn-icon" title="Ustawienia">
+                        <span class="material-symbols-outlined icon-md">settings</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="proximity-title">
-                <span>Radar zdarzeń (500m)</span>
-                <span class="badge-scan"><span class="material-symbols-outlined" style="font-size:12px; animation: spin 2s infinite linear;">sync</span> Skanowanie...</span>
-            </div>
-            <div id="proximity-container">
-                <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">Oczekiwanie na sygnał GPS...</div>
+            <div id="proximity-container-wrapper">
+                <div class="proximity-title">
+                    <span>Radar zdarzeń (500m)</span>
+                    <span class="badge-scan"><span class="material-symbols-outlined" style="font-size:12px; animation: spin 2s infinite linear;">sync</span> Skanowanie...</span>
+                </div>
+                <div id="proximity-container">
+                    <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">Oczekiwanie na sygnał GPS...</div>
+                </div>
             </div>
         </div>
 
@@ -264,6 +313,24 @@
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-cancel" id="btn-cancel">Anuluj</button>
                     <button type="button" class="btn btn-submit" id="btn-submit" disabled>Wyślij</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="settingsOverlay" class="modal-overlay">
+            <div class="modal-content">
+                <h2 class="modal-title">Ustawienia</h2>
+                <div class="modal-subtitle">Konfiguracja aplikacji</div>
+                
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span class="material-symbols-outlined" id="settings-mute-icon">volume_up</span> Dźwięki aplikacji
+                    </div>
+                    <button id="btn-toggle-sound" class="btn btn-cancel" style="padding: 8px 12px; font-size: 0.8rem; width: 100px;">WŁĄCZONE</button>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-submit" id="btn-close-settings" style="width:100%">Gotowe</button>
                 </div>
             </div>
         </div>
@@ -396,18 +463,37 @@
 
         let selectedStopForReport = null;
         let isMuted = false;
+        
+        // Zmienna włączająca tryb dodawania po wciśnięciu plusa (+)
+        let isAddingMode = false;
 
         let userLatLng = null;
         let userMarker = null;
         let eventDistancesHistory = {};
 
-        const btnMute = document.getElementById('btn-mute');
-        const muteIcon = document.getElementById('mute-icon');
+        // USTAWIENIA I DŹWIĘKI
+        const btnSettings = document.getElementById('btn-settings');
+        const settingsOverlay = document.getElementById('settingsOverlay');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        const btnToggleSound = document.getElementById('btn-toggle-sound');
+        const settingsMuteIcon = document.getElementById('settings-mute-icon');
 
-        btnMute.addEventListener('click', () => {
+        btnSettings.addEventListener('click', () => { settingsOverlay.style.display = 'flex'; });
+        btnCloseSettings.addEventListener('click', () => { settingsOverlay.style.display = 'none'; });
+
+        btnToggleSound.addEventListener('click', () => {
             isMuted = !isMuted;
-            muteIcon.textContent = isMuted ? 'volume_off' : 'volume_up';
-            showToast(isMuted ? "volume_off" : "volume_up", isMuted ? "Dźwięki wyciszone" : "Dźwięki włączone");
+            if(isMuted) {
+                btnToggleSound.textContent = "WYCISZONE";
+                btnToggleSound.style.background = "#eeeeee";
+                btnToggleSound.style.color = "#888";
+                settingsMuteIcon.textContent = "volume_off";
+            } else {
+                btnToggleSound.textContent = "WŁĄCZONE";
+                btnToggleSound.style.background = "#e0e0e0";
+                btnToggleSound.style.color = "var(--text-dark)";
+                settingsMuteIcon.textContent = "volume_up";
+            }
         });
 
         function playSound(audioId) {
@@ -434,6 +520,30 @@
             return `${diffMins} min. temu`;
         }
 
+        // AKTYWACJA TRYBU DODAWANIA PRZYCISKIEM FAB (+)
+        const fabAdd = document.getElementById('fab-add');
+        const instructionBanner = document.getElementById('instruction-banner');
+        
+        fabAdd.addEventListener('click', () => {
+            isAddingMode = !isAddingMode;
+            if(isAddingMode) {
+                instructionBanner.classList.add('active');
+                fabAdd.innerHTML = '<span class="material-symbols-outlined icon-lg">close</span>';
+                fabAdd.style.background = '#333';
+                document.getElementById('map').style.cursor = 'crosshair';
+            } else {
+                exitAddingMode();
+            }
+        });
+
+        function exitAddingMode() {
+            isAddingMode = false;
+            instructionBanner.classList.remove('active');
+            fabAdd.innerHTML = '<span class="material-symbols-outlined icon-lg">add</span>';
+            fabAdd.style.background = 'var(--primary)';
+            document.getElementById('map').style.cursor = '';
+        }
+
         document.getElementById('btn-select-gorzow').addEventListener('click', () => {
             document.getElementById('city-selector-overlay').style.opacity = '0';
             setTimeout(() => {
@@ -450,7 +560,7 @@
             
             L.control.zoom({ position: 'topright' }).addTo(map);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
-                maxZoom: 19, attribution: '&copy; OpenStreetMap'
+                maxZoom: 19, attribution: '&copy; Kanarek &copy; OpenStreetMap'
             }).addTo(map);
 
             staticRoutesLayer = L.layerGroup().addTo(map);
@@ -466,7 +576,7 @@
                 userLatLng = e.latlng;
                 if (!userMarker) {
                     userMarker = L.circleMarker(e.latlng, {
-                        radius: 8, fillColor: '#1e88e5', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9
+                        radius: 8, fillColor: '#1976d2', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9
                     }).addTo(map);
                 } else {
                     userMarker.setLatLng(e.latlng);
@@ -592,7 +702,17 @@
                 });
 
                 const marker = L.marker(coords, { icon: icon });
-                marker.on('click', () => { handleStopClick(stopName); });
+                
+                // Modyfikacja kliknięcia dla logiki Trybu Dodawania (Z polecenia: "klika plus, zaznacza przystanek")
+                marker.on('click', () => { 
+                    if (isAddingMode) {
+                        startReportForm(stopName);
+                        exitAddingMode();
+                        return;
+                    }
+                    handleStopClick(stopName); 
+                });
+                
                 stopMarkers[stopName] = { marker: marker, defaultIcon: icon };
             }
         }
@@ -796,16 +916,15 @@
             renderProximityFeed(activeList);
         }
 
+        // NOWY GÓRNY RADAR: Wyskakuje tylko dla <1000m. Bez warunku zbliżania się.
         function renderProximityFeed(activeList) {
-            const container = document.getElementById('proximity-container');
+            const topRadar = document.getElementById('top-radar-banner');
             
-            if (!userLatLng) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">Oczekiwanie na sygnał GPS pasażera...</div>`;
-                return;
-            }
+            // Zachowanie struktur starego feedu "Nic nie usuwaj"
+            eventDistancesHistory = {}; 
 
-            if (activeList.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--success); font-size:0.9rem; font-weight:bold; padding:16px 0;"><span class="material-symbols-outlined icon-sm" style="vertical-align:middle;">check_circle</span> Trasa czysta. Brak utrudnień.</div>`;
+            if (!userLatLng || activeList.length === 0) {
+                topRadar.classList.remove('visible');
                 return;
             }
 
@@ -813,60 +932,40 @@
                 return { ...item, distance: userLatLng.distanceTo(L.latLng(STOPS_COORDS[item.currentStop])) };
             });
 
+            // Pobierz najbliższe zdarzenie absolutnie
             feedData.sort((a, b) => a.distance - b.distance);
-            let targetEvent = null;
+            const targetEvent = feedData[0];
 
-            for (const item of feedData) {
-                if (item.distance <= 500) {
-                    let prevDist = eventDistancesHistory[item.report.id];
-                    let isApproaching = (prevDist === undefined) || (item.distance <= prevDist + 12);
-                    
-                    if (isApproaching) {
-                        targetEvent = item;
-                        break; 
-                    }
-                }
-            }
-
-            eventDistancesHistory = {};
-            feedData.forEach(item => { eventDistancesHistory[item.report.id] = item.distance; });
-
-            if (!targetEvent) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; padding:16px 0;"><span class="material-symbols-outlined icon-sm" style="vertical-align:middle;">explore</span> Skanowanie (brak zagrożeń 500m)</div>`;
-                return;
-            }
-
-            const config = EVENT_CONFIG[targetEvent.report.type];
-            const distStr = `${Math.round(targetEvent.distance)}m`;
-            
-            container.innerHTML = '';
-            const card = document.createElement('div');
-            card.className = 'alert-card';
-            card.style.borderLeftColor = config.color;
-            
-            card.innerHTML = `
-                <div class="alert-card-left">
-                    <div class="alert-card-type">
-                        <span class="material-symbols-outlined icon-sm" style="color:${config.color}">${config.icon}</span>
-                        ${config.label} (L${targetEvent.report.line})
+            if (targetEvent && targetEvent.distance <= 1000) {
+                const config = EVENT_CONFIG[targetEvent.report.type];
+                const distStr = targetEvent.distance < 1000 ? `${Math.round(targetEvent.distance)}m` : `${(targetEvent.distance / 1000).toFixed(1)}km`;
+                
+                topRadar.style.borderLeftColor = config.color;
+                topRadar.innerHTML = `
+                    <span class="material-symbols-outlined icon-lg" style="color:${config.color}">${config.icon}</span>
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:0.95rem; color:var(--text-dark);">${config.label} (Linia ${targetEvent.report.line})</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">Przystanek: ${targetEvent.currentStop}</div>
                     </div>
-                    <div class="alert-card-stop">Zbliżasz się • Prz: ${targetEvent.currentStop}</div>
-                </div>
-                <div class="alert-card-distance" style="color:${config.color}; border-color:${config.color};">
-                    <span class="material-symbols-outlined icon-sm">my_location</span> ${distStr}
-                </div>
-            `;
-
-            card.addEventListener('click', () => {
-                const coords = STOPS_COORDS[targetEvent.currentStop];
-                map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 0.8 });
-                setTimeout(() => {
-                    if(!map.hasLayer(stopMarkers[targetEvent.currentStop].marker)) stopMarkers[targetEvent.currentStop].marker.addTo(map);
-                    stopMarkers[targetEvent.currentStop].marker.openPopup();
-                }, 900);
-            });
-
-            container.appendChild(card);
+                    <div style="background:#eeeeee; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:0.85rem; color:var(--text-dark);">
+                        ${distStr}
+                    </div>
+                `;
+                
+                // Klik w powiadomienie centruje i otwiera
+                topRadar.onclick = () => {
+                    const coords = STOPS_COORDS[targetEvent.currentStop];
+                    map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 0.8 });
+                    setTimeout(() => {
+                        if(!map.hasLayer(stopMarkers[targetEvent.currentStop].marker)) stopMarkers[targetEvent.currentStop].marker.addTo(map);
+                        stopMarkers[targetEvent.currentStop].marker.openPopup();
+                    }, 900);
+                };
+                
+                topRadar.classList.add('visible');
+            } else {
+                topRadar.classList.remove('visible');
+            }
         }
 
         const modal = document.getElementById('modalOverlay');
@@ -964,6 +1063,7 @@
 
         let isVoting = false;
         document.addEventListener('click', (e) => {
+            // Wsparcie dla przycisku w domyślnym oknie przystanku
             const btnReport = e.target.closest('.btn-start-report');
             if (btnReport) {
                 startReportForm(btnReport.dataset.stop);
