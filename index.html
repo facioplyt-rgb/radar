@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
+    <meta name="theme-color" content="#1b2a3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,7 +13,6 @@
 
     <style>
         :root {
-            var-primary: #da251d;         
             --primary: #da251d;         
             --primary-dark: #b31c15;    
             --primary-light: #fbe9e8;   
@@ -78,7 +79,7 @@
         .panel-header { 
             background: var(--nav-bg); color: #ffffff;
             padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; 
-            padding-bottom: max(env(safe-area-inset-bottom), 12px); /* Obsługa dolnego paska na iPhone w nowym układzie */
+            padding-bottom: max(env(safe-area-inset-bottom), 12px); 
         }
         .panel-header h1 { font-size: 1.2rem; font-weight: bold; margin: 0; display: flex; align-items: center; gap: 8px; }
         .panel-header .badge { background: #334455; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; border: 1px solid #445566; }
@@ -118,7 +119,7 @@
             display: flex; align-items: center; gap: 4px;
         }
 
-        /* NOWY: GÓRNY RADAR POWIADOMIEŃ */
+        /* GÓRNY RADAR 1KM */
         #top-radar-banner {
             position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
             background: #ffffff; border-left: 6px solid var(--warning);
@@ -127,6 +128,18 @@
         }
         #top-radar-banner.visible { display: flex; animation: slideDown 0.3s forwards; }
         @keyframes slideDown { from{opacity:0; transform:translate(-50%, -20px);} to{opacity:1; transform:translate(-50%, 0);} }
+
+        /* PROPOZYCJA INSTALACJI (PWA) */
+        #pwa-prompt {
+            position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%);
+            background: var(--nav-bg); color: white; padding: 12px 16px; border-radius: 6px;
+            display: none; align-items: center; gap: 12px; z-index: 3000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); width: 90%; max-width: 350px;
+            animation: slideUp 0.4s forwards;
+        }
+        @keyframes slideUp { from{opacity:0; transform:translate(-50%, 20px);} to{opacity:1; transform:translate(-50%, 0);} }
+        #pwa-prompt button { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        #pwa-prompt button:active { background: var(--primary-dark); }
 
         /* PRZYCISK FAB DO ZGŁASZANIA (+) */
         #fab-add {
@@ -196,6 +209,15 @@
             100% { box-shadow: 0 0 0 0 rgba(218, 37, 29, 0); }
         }
 
+        /* ANIMACJA STRZAŁEK DLA KANARA */
+        .moving-arrows {
+            stroke-dasharray: 15 15;
+            animation: march 1s linear infinite;
+        }
+        @keyframes march {
+            to { stroke-dashoffset: -30; }
+        }
+
         /* POPUP DESIGN */
         .leaflet-popup-content-wrapper { background: #ffffff; border-radius: 4px; padding: 0; overflow: hidden; box-shadow: var(--shadow-classic); border: 1px solid var(--border-color); }
         .leaflet-popup-content { margin: 0; min-width: 260px; }
@@ -215,7 +237,7 @@
         .vote-btn.active-up { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
         .vote-btn.active-down { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
 
-        /* TOAST - PROSTY I CZYTELNY */
+        /* TOAST */
         #toast-container { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
         .toast { background: #323232; color: white; padding: 12px 16px; border-radius: 4px; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: toastEnter 0.2s forwards; display: flex; align-items: center; gap: 8px; }
         @keyframes toastEnter { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -230,6 +252,7 @@
     <audio id="sound-confirm" src="potwierdzono.mp3" preload="auto"></audio>
     <audio id="sound-cancel" src="odwolano.mp3" preload="auto"></audio>
     <audio id="sound-notify" src="dodano.mp3" preload="auto"></audio>
+    <audio id="sound-beep" src="beep.mp3" preload="auto" loop></audio>
 
     <div id="city-selector-overlay">
         <div class="city-card">
@@ -255,6 +278,13 @@
         <button id="fab-add">
             <span class="material-symbols-outlined icon-lg">add</span>
         </button>
+
+        <div id="pwa-prompt">
+            <span class="material-symbols-outlined icon-md">install_mobile</span>
+            <div style="flex:1; font-size:0.8rem; line-height:1.2;">Dodaj Kanarka do telefonu dla wygody!</div>
+            <button id="btn-install-pwa">Instaluj</button>
+            <span class="material-symbols-outlined" id="btn-close-pwa" style="font-size: 20px; cursor: pointer; color: #aaa;">close</span>
+        </div>
 
         <div id="top-radar-banner">
             </div>
@@ -470,6 +500,34 @@
         let userLatLng = null;
         let userMarker = null;
         let eventDistancesHistory = {};
+        let beepedEvents = new Set(); // Rejestr zdarzeń wywołujących pikanie (5s)
+
+        // LOGIKA PROPOZYCJI INSTALACJI (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if(!localStorage.getItem('pwa_declined')) {
+                setTimeout(() => {
+                    document.getElementById('pwa-prompt').style.display = 'flex';
+                }, 3000);
+            }
+        });
+
+        document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('pwa-prompt').style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-close-pwa').addEventListener('click', () => {
+            document.getElementById('pwa-prompt').style.display = 'none';
+            localStorage.setItem('pwa_declined', 'true');
+        });
+
 
         // USTAWIENIA I DŹWIĘKI
         const btnSettings = document.getElementById('btn-settings');
@@ -703,7 +761,7 @@
 
                 const marker = L.marker(coords, { icon: icon });
                 
-                // Modyfikacja kliknięcia dla logiki Trybu Dodawania (Z polecenia: "klika plus, zaznacza przystanek")
+                // Modyfikacja kliknięcia dla logiki Trybu Dodawania
                 marker.on('click', () => { 
                     if (isAddingMode) {
                         startReportForm(stopName);
@@ -788,6 +846,7 @@
             `;
         }
 
+        // RÓŻNICOWANIE (Kanar = 5 przystanków, Inne/Awaria = 1 przystanek)
         function getProcessedEvents() {
             const now = Date.now();
             const activeEvents = [];
@@ -818,7 +877,9 @@
         function getActiveReportForStop(stopName) {
             const activeList = getProcessedEvents();
             for (const item of activeList) {
-                const maxEnd = Math.min(item.currentIndex + 5, item.route.length);
+                // Tylko Kanar zajmuje do 5 stacji w przód. Awaria stoi w miejscu (1 stacja).
+                const spanCount = (item.report.type === 'kanar') ? 5 : 1;
+                const maxEnd = Math.min(item.currentIndex + spanCount, item.route.length);
                 const stopIndex = item.route.indexOf(stopName);
                 if (stopIndex >= item.currentIndex && stopIndex < maxEnd) return item;
             }
@@ -855,6 +916,9 @@
                 const isFaded = (Date.now() - item.report.createdAt) > FADE_THRESHOLD_MS;
                 const pulseClass = (item.report.type === 'kanar' && !isFaded) ? 'pulse' : '';
                 
+                // Tylko Kanar zajmuje do 5 stacji w przód. Awaria stoi w miejscu (1 stacja).
+                const spanCount = (item.report.type === 'kanar') ? 5 : 1;
+                
                 if (showAllStops) {
                     const alertIcon = L.divIcon({
                         className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
@@ -864,13 +928,14 @@
                         iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -16]
                     });
 
-                    const maxEnd = Math.min(item.currentIndex + 5, item.route.length);
+                    const maxEnd = Math.min(item.currentIndex + spanCount, item.route.length);
                     let polylinePoints = [];
 
                     for (let i = item.currentIndex; i < maxEnd; i++) {
                         const affectedStop = item.route[i];
                         
-                        if (i < maxEnd - 1) {
+                        // Zapis punktów tylko jeśli jest to linia (Kanar)
+                        if (i < maxEnd - 1 && item.report.type === 'kanar') {
                             let detailedSegment = getDetailedPathBetweenStops(item.route[i], item.route[i+1]);
                             polylinePoints = polylinePoints.concat(detailedSegment);
                         }
@@ -884,8 +949,12 @@
                         }
                     }
 
-                    if (polylinePoints.length > 1) {
-                        const polyline = L.polyline(polylinePoints, { color: config.color, weight: 5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+                    // Rysowanie poruszających się strzałek tylko dla Kanara (gdy linia istnieje)
+                    if (polylinePoints.length > 1 && item.report.type === 'kanar') {
+                        const polyline = L.polyline(polylinePoints, { 
+                            color: config.color, weight: 5, opacity: 0.8, lineJoin: 'round',
+                            className: 'moving-arrows'
+                        }).addTo(map);
                         activePolylines.push(polyline);
                     }
                 } else {
@@ -916,11 +985,11 @@
             renderProximityFeed(activeList);
         }
 
-        // NOWY GÓRNY RADAR: Wyskakuje tylko dla <1000m. Bez warunku zbliżania się.
+        // NOWY GÓRNY RADAR: Wyskakuje tylko dla <1000m. Bez warunku zbliżania się. Z pikanym powiadomieniem.
         function renderProximityFeed(activeList) {
             const topRadar = document.getElementById('top-radar-banner');
             
-            // Zachowanie struktur starego feedu "Nic nie usuwaj"
+            // Zachowanie struktur starego feedu (nie używamy, ale nic nie usuwamy wg polecenia)
             eventDistancesHistory = {}; 
 
             if (!userLatLng || activeList.length === 0) {
@@ -952,7 +1021,20 @@
                     </div>
                 `;
                 
-                // Klik w powiadomienie centruje i otwiera
+                // Pikanie dźwiękowe 5 sekund (tylko dla kanara i tylko raz na dane zdarzenie)
+                if (targetEvent.report.type === 'kanar' && !beepedEvents.has(targetEvent.report.id) && !isMuted) {
+                    beepedEvents.add(targetEvent.report.id);
+                    const beepAudio = document.getElementById('sound-beep');
+                    if (beepAudio) {
+                        beepAudio.currentTime = 0;
+                        beepAudio.play().catch(e => console.log("Zablokowano autoodtwarzanie"));
+                        setTimeout(() => {
+                            beepAudio.pause();
+                            beepAudio.currentTime = 0;
+                        }, 5000);
+                    }
+                }
+                
                 topRadar.onclick = () => {
                     const coords = STOPS_COORDS[targetEvent.currentStop];
                     map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 0.8 });
