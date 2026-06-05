@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanarek</title>
+    <title>Kanarek - Gorzów Wlkp.</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,166 +11,180 @@
 
     <style>
         :root {
-            --primary: #dc2626;         
-            --primary-dark: #b91c1c;    
-            --primary-light: #fee2e2;   
-            --danger: #ef4444;          
-            --success: #059669;
-            --bg-solid: #f1f5f9;        
+            /* Klasyczne, mocne kolory w stylu Yanosika */
+            --primary: #da251d;         
+            --primary-dark: #b31c15;    
+            --primary-light: #fbe9e8;   
+            --danger: #da251d;          
+            --success: #2e7d32;
+            --warning: #f57f17;
+            --bg-solid: #e0e0e0;        
             --bg-panel: #ffffff;        
-            --border-color: #cbd5e1;    
-            --text-dark: #0f172a;       
-            --text-muted: #64748b;      
-            --radius-md: 12px;
+            --nav-bg: #1b2a3a;          /* Granatowy pasek nawigacyjny */
+            --border-color: #cccccc;    
+            --text-dark: #222222;       
+            --text-muted: #555555;      
+            --radius-md: 6px;           /* Klasyczne, małe zaokrąglenia */
+            --shadow-classic: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         * { box-sizing: border-box; touch-action: manipulation; margin: 0; padding: 0; }
         
         body, html {
             width: 100vw; height: 100dvh; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Roboto, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
             overflow: hidden; background-color: var(--bg-solid); 
             color: var(--text-dark);
         }
 
-        .icon-sm { font-size: 18px !important; vertical-align: text-bottom; }
-        .icon-md { font-size: 24px !important; vertical-align: middle; }
-        .icon-lg { font-size: 28px !important; vertical-align: middle; }
+        .icon-sm { font-size: 18px !important; }
+        .icon-md { font-size: 22px !important; }
+        .icon-lg { font-size: 26px !important; }
         .icon-text-gap { display: inline-flex; align-items: center; gap: 6px; }
 
-        /* EKRAN STARTOWY */
+        /* KLASYCZNY EKRAN STARTOWY */
         #city-selector-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(241, 245, 249, 0.95); backdrop-filter: blur(8px);
-            z-index: 9999; display: flex; justify-content: center; align-items: center;
-            padding: 20px; transition: opacity 0.3s ease;
+            background: #e0e0e0; z-index: 9999; display: flex; justify-content: center; align-items: center;
+            padding: 20px; transition: opacity 0.2s ease;
         }
         .city-card {
-            background: var(--bg-panel); width: 100%; max-width: 450px; border-radius: var(--radius-md);
-            padding: 30px 24px; border: 2px solid var(--primary); box-shadow: 0 10px 25px rgba(220, 38, 38, 0.15);
+            background: #ffffff; width: 100%; max-width: 400px; border-radius: var(--radius-md);
+            padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-classic);
             text-align: center;
         }
-        .city-card h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--primary); }
+        .city-card h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--nav-bg); }
+        .city-card h1 span { color: var(--primary); }
         .city-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
-        .city-list { display: flex; flex-direction: column; gap: 12px; }
         .city-btn {
-            background: var(--bg-solid); border: 2px solid var(--border-color); color: var(--text-dark);
-            padding: 16px; border-radius: var(--radius-md); font-size: 1rem; font-weight: 800;
+            background: #ffffff; border: 2px solid var(--border-color); color: var(--text-dark);
+            padding: 14px 16px; border-radius: var(--radius-md); font-size: 1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-            transition: all 0.2s;
+            transition: background 0.1s; width: 100%;
         }
-        .city-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+        .city-btn:active, .city-btn.active { border-color: var(--nav-bg); background: #f0f4f8; }
 
         /* MAPA */
-        #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #e2e8f0; }
+        #map { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; background: #e0e0e0; }
 
-        /* PANEL DOLNY */
+        /* KLASYCZNY PANEL DOLNY NA CAŁĄ SZEROKOŚĆ */
         #ui-panel {
-            position: absolute; bottom: 0; left: 0; width: 100vw; height: auto;
-            background: var(--bg-panel); border-top: 3px solid var(--primary);
+            position: absolute; bottom: 0; left: 0; width: 100vw;
+            background: var(--bg-panel); 
             z-index: 1000; display: flex; flex-direction: column;
-            box-shadow: 0 -4px 25px rgba(0,0,0,0.08); padding-bottom: max(env(safe-area-inset-bottom), 12px);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.15); 
         }
 
-        .panel-header { padding: 14px 20px 8px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .panel-header h1 { font-size: 1.15rem; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-        .panel-header .badge { background: var(--primary-light); color: var(--primary-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
+        .panel-header { 
+            background: var(--nav-bg); color: #ffffff;
+            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; 
+        }
+        .panel-header h1 { font-size: 1.2rem; font-weight: bold; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .panel-header .badge { background: #334455; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; border: 1px solid #445566; }
         
-        .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
-        .btn-icon:hover, .btn-icon:active { color: var(--primary); background: var(--primary-light); }
+        .btn-icon { background: transparent; border: none; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 6px; transition: 0.2s; }
+        .btn-icon:active { opacity: 0.7; }
 
-        /* LIVE RADAR */
+        /* SEKCJA RADARU ZBLIŻENIOWEGO */
         #proximity-container {
-            display: flex; flex-direction: column; gap: 6px;
-            padding: 4px 16px 12px 16px; max-height: 120px; overflow-y: auto;
+            background: #ffffff;
+            display: flex; flex-direction: column; gap: 0;
+            max-height: 150px; overflow-y: auto; border-top: 1px solid var(--border-color);
+            padding-bottom: max(env(safe-area-inset-bottom), 8px);
         }
         .proximity-title {
-            font-size: 0.75rem; font-weight: 800; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; padding-left: 4px; display: flex; justify-content: space-between; align-items: center;
+            background: #f5f5f5; border-bottom: 1px solid var(--border-color);
+            font-size: 0.75rem; font-weight: bold; color: var(--text-muted);
+            text-transform: uppercase; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;
         }
-        .proximity-title .badge-scan { background: #dbeafe; color: #1e3a8a; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; }
+        .proximity-title .badge-scan { display: inline-flex; align-items: center; gap: 4px; color: #0d47a1; font-size: 0.7rem; font-weight: bold; }
         
+        /* KLASYCZNE KARTY ALERTÓW (Lista) */
         .alert-card {
             display: flex; align-items: center; justify-content: space-between;
-            background: var(--bg-solid); padding: 12px 16px; border-radius: var(--radius-md);
-            border-left: 4px solid var(--primary); cursor: pointer; transition: all 0.2s;
+            background: #ffffff; padding: 12px 16px; 
+            border-bottom: 1px solid #eeeeee; border-left: 6px solid var(--primary); 
+            cursor: pointer;
         }
-        .alert-card:active { transform: scale(0.98); background: #e2e8f0; }
+        .alert-card:active { background: #f0f0f0; }
         .alert-card-left { display: flex; flex-direction: column; gap: 2px; }
-        .alert-card-type { font-size: 0.95rem; font-weight: 900; color: var(--text-dark); display: flex; align-items: center; gap: 6px; }
-        .alert-card-stop { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+        .alert-card-type { font-size: 0.95rem; font-weight: bold; color: var(--text-dark); display: flex; align-items: center; gap: 6px; }
+        .alert-card-stop { font-size: 0.8rem; color: var(--text-muted); }
         .alert-card-distance {
-            background: var(--primary-light); color: var(--primary-dark); border: 2px solid var(--primary);
-            padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 900; white-space: nowrap; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.2);
+            background: #eeeeee; color: var(--nav-bg); border: 1px solid #cccccc;
+            padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; white-space: nowrap;
+            display: flex; align-items: center; gap: 4px;
         }
 
-        /* MODAL ZGŁOSZENIA */
+        /* KLASYCZNY MODAL ZGŁOSZEŃ */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(15, 23, 42, 0.7); z-index: 2000; justify-content: center; align-items: flex-end; padding: 0;
+            background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; padding: 16px;
         }
         .modal-content {
-            background: var(--bg-panel); width: 100%; max-width: 500px; border-top: 4px solid var(--primary);
-            padding: 24px; border-radius: 20px 20px 0 0;
+            background: #ffffff; width: 100%; max-width: 400px;
+            padding: 20px; border-radius: var(--radius-md);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-        .modal-title { font-size: 1.25rem; font-weight: 900; margin-bottom: 5px; color: var(--primary); text-align: center; }
-        .modal-subtitle { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); text-align: center; margin-bottom: 20px; }
         
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-title { font-size: 1.25rem; font-weight: bold; margin-bottom: 4px; color: var(--text-dark); text-align: center; }
+        .modal-subtitle { font-size: 0.9rem; color: var(--text-muted); text-align: center; margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 12px; }
+        
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-dark); margin-bottom: 6px; }
         .input-group select {
-            width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: var(--radius-md);
-            font-size: 1rem; background: var(--bg-panel); color: var(--text-dark); font-weight: 700;
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px;
+            font-size: 1rem; background: #ffffff; color: var(--text-dark); outline: none;
         }
-        .input-group select:focus { outline: none; border-color: var(--primary); background: var(--primary-light); }
-        .input-group select:disabled { opacity: 0.5; background: var(--bg-solid); cursor: not-allowed; }
+        .input-group select:focus { border-color: var(--nav-bg); }
+        .input-group select:disabled { opacity: 0.5; background: #f5f5f5; }
         
-        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .btn { flex: 1; padding: 14px; border-radius: var(--radius-md); font-weight: 800; border: none; cursor: pointer; font-size: 1rem; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--border-color) !important; color: var(--text-muted) !important; }
-        .btn-cancel { background: var(--bg-solid); color: var(--text-dark); border: 2px solid var(--border-color); }
-        .btn-submit { background: var(--primary); color: white; border: 2px solid var(--primary-dark); }
+        .modal-buttons { display: flex; gap: 8px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border-radius: 4px; font-weight: bold; border: none; cursor: pointer; font-size: 1rem; text-transform: uppercase; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-cancel { background: #e0e0e0; color: var(--text-dark); }
+        .btn-submit { background: var(--primary); color: white; }
+        .btn-submit:not(:disabled):active { background: var(--primary-dark); }
 
-        /* MARKERY I DYMKI */
+        /* SOLIDNE MARKERY MAPY */
         .map-marker {
-            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
-            border-radius: 50%; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; color: white; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         }
-        .map-marker.faded { opacity: 0.6; filter: grayscale(80%); }
-        .map-marker.pulse { animation: pulseWarning 1.5s infinite; }
-        @keyframes pulseWarning {
-            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        .map-marker.faded { opacity: 0.6; }
+        .map-marker.pulse { animation: simplePulse 1.5s infinite; }
+        @keyframes simplePulse {
+            0% { box-shadow: 0 0 0 0 rgba(218, 37, 29, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(218, 37, 29, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(218, 37, 29, 0); }
         }
 
-        .leaflet-popup-content-wrapper { background: var(--bg-panel); border-radius: var(--radius-md); padding: 0; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .leaflet-popup-content { margin: 0; min-width: 280px; }
-        .leaflet-popup-tip { background: var(--bg-panel); border: 1px solid var(--border-color); border-top: none; border-left: none; }
+        /* POPUP DESIGN */
+        .leaflet-popup-content-wrapper { background: #ffffff; border-radius: 4px; padding: 0; overflow: hidden; box-shadow: var(--shadow-classic); border: 1px solid var(--border-color); }
+        .leaflet-popup-content { margin: 0; min-width: 260px; }
+        .leaflet-popup-tip { background: #ffffff; }
         
-        .popup-header { padding: 14px 16px; font-weight: 900; font-size: 16px; color: white; display: flex; align-items: center; gap: 6px; justify-content: space-between;}
-        .popup-body { padding: 14px 16px; font-size: 14px; color: var(--text-dark); line-height: 1.6; font-weight: 600; }
-        .popup-actions { display: flex; padding: 12px; gap: 12px; background: var(--bg-solid); border-top: 1px solid var(--border-color); justify-content: center; }
+        .popup-header { padding: 10px 14px; font-weight: bold; font-size: 14px; color: white; display: flex; align-items: center; justify-content: space-between;}
+        .popup-body { padding: 12px 14px; font-size: 13px; color: var(--text-dark); line-height: 1.5; }
+        .popup-actions { display: flex; padding: 10px; gap: 8px; background: #f5f5f5; border-top: 1px solid #eeeeee; justify-content: center; }
         
-        .btn-report-popup { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-report-popup { width: 100%; padding: 10px; background: var(--nav-bg); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
         
         .vote-btn {
-            flex: 1; padding: 12px; border-radius: var(--radius-md); border: 2px solid var(--border-color);
-            background: var(--bg-panel); color: var(--text-muted); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s;
+            flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+            background: #ffffff; color: var(--text-muted); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: bold;
         }
-        .vote-btn.active-up { background: #d1fae5; color: #047857; border-color: #10b981; }
-        .vote-btn.active-down { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary); }
+        .vote-btn.active-up { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+        .vote-btn.active-down { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
 
-        /* TOAST */
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: var(--primary); color: white; padding: 14px 28px; border-radius: 30px; font-size: 0.95rem; font-weight: 800; border: 2px solid var(--primary-dark); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); animation: toastEnter 0.2s forwards, toastLeave 0.2s forwards 3.5s; opacity: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        @keyframes toastEnter { to { opacity: 1; transform: translateY(10px); } }
-        @keyframes toastLeave { to { opacity: 0; transform: translateY(-10px); } }
+        /* TOAST - PROSTY I CZYTELNY */
+        #toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; }
+        .toast { background: #323232; color: white; padding: 12px 16px; border-radius: 4px; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: toastEnter 0.2s forwards; display: flex; align-items: center; gap: 8px; }
+        @keyframes toastEnter { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (min-width: 768px) {
-            .modal-content { border-radius: var(--radius-md); margin-bottom: 50px; border: 2px solid var(--primary); }
-            .modal-overlay { align-items: center; }
+            #ui-panel { bottom: 20px; left: 20px; width: 350px; border-radius: 8px; transform: none; box-shadow: var(--shadow-classic); border: 1px solid var(--border-color); }
         }
     </style>
 </head>
@@ -183,8 +196,8 @@
 
     <div id="city-selector-overlay">
         <div class="city-card">
-            <h1><span class="material-symbols-outlined icon-lg">tram</span> Kanarek Tramwaje</h1>
-            <p>Wybierz miasto, aby kontynuować</p>
+            <h1><span class="material-symbols-outlined icon-lg">tram</span>Kanarek</h1>
+            <p>System Monitoringu Tramwajów w Gorzowie</p>
             <div class="city-list">
                 <button class="city-btn active" id="btn-select-gorzow">
                     <span class="icon-text-gap"><span class="material-symbols-outlined icon-md">location_city</span> Gorzów Wlkp.</span>
@@ -200,48 +213,48 @@
         
         <div id="ui-panel">
             <div class="panel-header">
-                <h1><span class="material-symbols-outlined icon-lg">tram</span> Kanarek</h1>
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <h1><span class="material-symbols-outlined icon-lg">radar</span>Kanarek</h1>
+                <div style="display: flex; gap: 10px; align-items: center;">
                     <button id="btn-mute" class="btn-icon" title="Wycisz dźwięki">
                         <span class="material-symbols-outlined icon-md" id="mute-icon">volume_up</span>
                     </button>
-                    <span class="badge">Gorzów Wlkp.</span>
+                    <span class="badge">Gorzów</span>
                 </div>
             </div>
 
             <div class="proximity-title">
-                <span>W pobliżu (Radar)</span>
-                <span class="badge-scan"><span class="material-symbols-outlined" style="font-size:10px;">my_location</span> Skanowanie...</span>
+                <span>Radar zdarzeń (500m)</span>
+                <span class="badge-scan"><span class="material-symbols-outlined" style="font-size:12px; animation: spin 2s infinite linear;">sync</span> Skanowanie...</span>
             </div>
             <div id="proximity-container">
-                <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:8px;">Oczekiwanie na sygnał GPS...</div>
+                <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">Oczekiwanie na sygnał GPS...</div>
             </div>
         </div>
 
         <div id="modalOverlay" class="modal-overlay">
             <div class="modal-content">
-                <h2 class="modal-title">Zgłoś na przystanku</h2>
+                <h2 class="modal-title">Zgłoś Utrudnienie</h2>
                 <div id="modal-stop-name" class="modal-subtitle">Nazwa przystanku</div>
                 
                 <div class="input-group">
-                    <label>Rodzaj Utrudnienia</label>
+                    <label>Rodzaj Zdarzenia</label>
                     <select id="event-type">
                         <option value="kanar">Kontrola biletów (Kanar)</option>
-                        <option value="awaria">Awaria tramwaju</option>
+                        <option value="awaria">Awaria pojazdu</option>
                         <option value="opoznienie">Opóźnienie / Zatrzymanie</option>
                         <option value="inne">Inne utrudnienie</option>
                     </select>
                 </div>
                 
                 <div class="input-group">
-                    <label>Linia Tramwajowa <span style="color:var(--primary)">*</span></label>
+                    <label>Linia Tramwajowa *</label>
                     <select id="event-line">
                         <option value="" disabled selected>Wybierz linię...</option>
                     </select>
                 </div>
                 
                 <div class="input-group">
-                    <label>Kierunek <span style="color:var(--primary)">*</span></label>
+                    <label>Kierunek Jazdy *</label>
                     <select id="event-direction" disabled>
                         <option value="" disabled selected>Najpierw wybierz linię...</option>
                     </select>
@@ -267,11 +280,12 @@
         };
 
         const EVENT_CONFIG = {
-            kanar: { label: 'Kanar', color: '#dc2626', icon: 'confirmation_number' },
-            awaria: { label: 'Awaria', color: '#7f1d1d', icon: 'build' },
-            opoznienie: { label: 'Zatrzymanie', color: '#d97706', icon: 'schedule' },
-            inne: { label: 'Inne', color: '#1d4ed8', icon: 'warning' },
-            default: { label: 'Przystanek', color: '#0f172a', icon: 'tram' }
+            kanar: { label: 'Kanar', color: '#da251d', icon: 'confirmation_number' },
+            awaria: { label: 'Awaria', color: '#424242', icon: 'build' },
+            opoznienie: { label: 'Zatrzymanie', color: '#f57f17', icon: 'schedule' },
+            inne: { label: 'Inne', color: '#1976d2', icon: 'warning' },
+            remont: { label: 'Remont', color: '#e65100', icon: 'construction' },
+            default: { label: 'Przystanek', color: '#1b2a3a', icon: 'tram' }
         };
 
         const STOPS_COORDS = {
@@ -310,6 +324,41 @@
             "Piaski": [52.753106,15.232144]
         };
 
+        const TRACK_SHAPES = {
+            "Wieprzyce-Kostrzynska": [[52.718452,15.180822], [52.719100,15.182000], [52.719600,15.182916]],
+            "Kostrzynska-Tartaczna": [[52.719600,15.182916], [52.720800,15.185200], [52.722220,15.189655]],
+            "Tartaczna-PlSloneczny": [[52.722220,15.189655], [52.723100,15.194500], [52.723542,15.198743]],
+            "PlSloneczny-OsSloneczne": [[52.723542,15.198743], [52.724200,15.202500], [52.724704,15.205415]],
+            "OsSloneczne-Olimpijska": [[52.724704,15.205415], [52.725200,15.208000], [52.725622,15.210180]],
+            "Olimpijska-Zelazna": [[52.725622,15.210180], [52.726500,15.214500], [52.727433,15.219205]],
+            "Zelazna-Jancarza": [[52.727433,15.219205], [52.728500,15.223000], [52.729444,15.225343]],
+            "Jancarza-Dworcowa": [[52.729444,15.225343], [52.729800,15.227500], [52.729965,15.230386]],
+            "Dworcowa-Dworzec": [[52.729965,15.230386], [52.729200,15.229800], [52.728475,15.229099]],
+            "Dworcowa-Katedra": [[52.729965,15.230386], [52.730300,15.234000], [52.730923,15.238322]],
+            "Katedra-Wybickiego": [[52.730923,15.238322], [52.732100,15.237300], [52.732841,15.236707]],
+            "Wybickiego-NieznanegoZolnierza": [[52.732841,15.236707], [52.733900,15.235900], [52.734804,15.235200]],
+            "NieznanegoZolnierza-Borowskiego": [[52.734804,15.235200], [52.735800,15.234400], [52.736658,15.233786]],
+            "Borowskiego-Grunwaldzki": [[52.736658,15.233786], [52.738000,15.232900], [52.739142,15.232211]],
+            "Grunwaldzki-Sad": [[52.739142,15.232211], [52.741500,15.230600], [52.743304,15.229694]],
+            "Sad-Chodkiewicza": [[52.743304,15.229694], [52.745000,15.229800], [52.746714,15.230699]],
+            "Chodkiewicza-Kilinskiego": [[52.746714,15.230699], [52.748500,15.231200], [52.750198,15.231792]],
+            "Kilinskiego-Piaski": [[52.750198,15.231792], [52.751800,15.232000], [52.753106,15.232144]],
+            "Katedra-Herberta": [[52.730923,15.238322], [52.731500,15.241500], [52.732244,15.243514]],
+            "Herberta-Staromiejski": [[52.732244,15.243514], [52.732600,15.244800], [52.733106,15.246015]],
+            "Katedra-Welniany-Staromiejski": [[52.730923,15.238322], [52.731573,15.240764], [52.732300,15.243500], [52.733106,15.246015]],
+            "Staromiejski-CEZiB": [[52.733106,15.246015], [52.733500,15.249500], [52.733899,15.252439]],
+            "CEZiB-Santockie": [[52.733899,15.252439], [52.733950,15.253800], [52.734044,15.254958]],
+            "Santockie-Solidarnosci": [[52.734044,15.254958], [52.736000,15.256000], [52.738022,15.256433]],
+            "Solidarnosci-Pomorska": [[52.738022,15.256433], [52.740000,15.255500], [52.741713,15.253991]],
+            "Pomorska-Kopernika": [[52.741713,15.253991], [52.743000,15.251500], [52.744499,15.250299]],
+            "Kopernika-Stilon": [[52.744499,15.250299], [52.745500,15.252000], [52.746962,15.254183]],
+            "Stilon-Szpital": [[52.746962,15.254183], [52.749500,15.257500], [52.751869,15.260814]],
+            "Szpital-Medyk": [[52.751869,15.260814], [52.753200,15.262500], [52.754433,15.264330]],
+            "Medyk-Gdanskie": [[52.754433,15.264330], [52.756000,15.266500], [52.757420,15.268347]],
+            "Gdanskie-SzarychSzeregow": [[52.757420,15.268347], [52.759000,15.270500], [52.760357,15.272396]],
+            "SzarychSzeregow-Nila": [[52.760357,15.272396], [52.761800,15.274500], [52.763085,15.276138]]
+        };
+
         const TRAM_ROUTES = {
             "1": {
                 "Fieldorfa\"Nila\"": ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Tartaczna", "Pl. Słoneczny", "Os. Słoneczne", "Olimpijska", "Żelazna", "Jancarza", "Dworcowa", "Katedra", "Herberta", "Pl. Staromiejski", "CEZiB", "Rondo Santockie", "Rondo Solidarności", "Pomorska", "Park Kopernika", "Stilon", "Walczaka Szpital", "Medyk", "Rondo Gdańskie", "Szarych Szeregów", "Fieldorfa\"Nila\""],
@@ -339,16 +388,14 @@
         let reports = {};
         let map;
         
-        // Zmienne do warstw logicznych
         let stopMarkers = {}; 
         let activePolylines = []; 
-        let staticRoutesLayer, macroMarkersLayer;
-        let macroMarkers = {}; // Makro znaczniki przy oddaleniu (LOD)
+        let staticRoutesLayer, macroMarkersLayer, renovationLayer;
+        let macroMarkers = {}; 
 
         let selectedStopForReport = null;
         let isMuted = false;
 
-        // System Geofencing & History (zbliżanie/oddalanie)
         let userLatLng = null;
         let userMarker = null;
         let eventDistancesHistory = {};
@@ -372,7 +419,7 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            if(isError) { toast.style.background = '#0f172a'; toast.style.borderColor = '#000000'; }
+            if(isError) { toast.style.background = '#da251d'; }
             toast.innerHTML = `<span class="material-symbols-outlined icon-md">${icon}</span> ${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
@@ -392,13 +439,13 @@
                 document.getElementById('city-selector-overlay').style.display = 'none';
                 document.getElementById('app-container').style.display = 'block';
                 initMap();
-            }, 300);
+            }, 200);
         });
 
         function initMap() {
             map = L.map('map', { 
                 zoomControl: false, maxBounds: ALLOWED_BOUNDS, maxBoundsViscosity: 1.0, minZoom: 12
-            }).setView([52.7367, 15.2288], 13);
+            }).setView([52.7367, 15.2288], 14);
             
             L.control.zoom({ position: 'topright' }).addTo(map);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
@@ -407,8 +454,10 @@
 
             staticRoutesLayer = L.layerGroup().addTo(map);
             macroMarkersLayer = L.layerGroup().addTo(map);
+            renovationLayer = L.layerGroup().addTo(map);
 
             drawStaticRoutes();
+            initRenovationZone(); 
             initStopMarkers();
 
             map.locate({ watch: true, enableHighAccuracy: true });
@@ -416,7 +465,7 @@
                 userLatLng = e.latlng;
                 if (!userMarker) {
                     userMarker = L.circleMarker(e.latlng, {
-                        radius: 9, fillColor: '#3b82f6', color: '#ffffff', weight: 3, opacity: 1, fillOpacity: 0.9
+                        radius: 8, fillColor: '#1e88e5', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9
                     }).addTo(map);
                 } else {
                     userMarker.setLatLng(e.latlng);
@@ -443,24 +492,102 @@
             }
         }
 
-        // Rysuje fizyczne, statyczne trasy (sieć)
+        function getDetailedPathBetweenStops(stopA, stopB) {
+            const pairs = [
+                ["Wieprzyce PKP", "Zajezdnia Kostrzyńska", "Wieprzyce-Kostrzynska"],
+                ["Zajezdnia Kostrzyńska", "Tartaczna", "Kostrzynska-Tartaczna"],
+                ["Tartaczna", "Pl. Słoneczny", "Tartaczna-PlSloneczny"],
+                ["Pl. Słoneczny", "Os. Słoneczne", "PlSloneczny-OsSloneczne"],
+                ["Os. Słoneczne", "Olimpijska", "OsSloneczne-Olimpijska"],
+                ["Olimpijska", "Żelazna", "Olimpijska-Zelazna"],
+                ["Żelazna", "Jancarza", "Zelazna-Jancarza"],
+                ["Jancarza", "Dworcowa", "Jancarza-Dworcowa"],
+                ["Dworcowa", "Dworzec Główny", "Dworcowa-Dworzec"],
+                ["Dworcowa", "Katedra", "Dworcowa-Katedra"],
+                ["Katedra", "Wybickiego", "Katedra-Wybickiego"],
+                ["Wybickiego", "Pl. Nieznanego Żołnierza", "Wybickiego-NieznanegoZolnierza"],
+                ["Pl. Nieznanego Żołnierza", "Borowskiego", "NieznanegoZolnierza-Borowskiego"],
+                ["Borowskiego", "Pl. Grunwaldzki", "Borowskiego-Grunwaldzki"],
+                ["Pl. Grunwaldzki", "Sąd Okręgowy", "Grunwaldzki-Sad"],
+                ["Sąd Okręgowy", "Chodkiewicza", "Sad-Chodkiewicza"],
+                ["Chodkiewicza", "Kilińskiego", "Chodkiewicza-Kilinskiego"],
+                ["Kilińskiego", "Piaski", "Kilinskiego-Piaski"],
+                ["Katedra", "Herberta", "Katedra-Herberta"],
+                ["Herberta", "Pl. Staromiejski", "Herberta-Staromiejski"],
+                ["Wełniany Rynek", "Katedra", "Katedra-Welniany-Staromiejski"], 
+                ["Pl. Staromiejski", "CEZiB", "Staromiejski-CEZiB"],
+                ["CEZiB", "Rondo Santockie", "CEZiB-Santockie"],
+                ["Rondo Santockie", "Rondo Solidarności", "Santockie-Solidarnosci"],
+                ["Rondo Solidarności", "Pomorska", "Solidarnosci-Pomorska"],
+                ["Pomorska", "Park Kopernika", "Pomorska-Kopernika"],
+                ["Park Kopernika", "Stilon", "Kopernika-Stilon"],
+                ["Stilon", "Walczaka Szpital", "Stilon-Szpital"],
+                ["Walczaka Szpital", "Medyk", "Szpital-Medyk"],
+                ["Medyk", "Rondo Gdańskie", "Medyk-Gdanskie"],
+                ["Rondo Gdańskie", "Szarych Szeregów", "Medyk-Gdanskie"],
+                ["Szarych Szeregów", "Fieldorfa\"Nila\"", "SzarychSzeregow-Nila"]
+            ];
+
+            for (const p of pairs) {
+                if ((p[0] === stopA && p[1] === stopB) || (p[0] === stopB && p[1] === stopA)) {
+                    let shape = TRACK_SHAPES[p[2]];
+                    if (p[0] === stopB) { return [...shape].reverse(); } 
+                    return shape;
+                }
+            }
+            return [STOPS_COORDS[stopA], STOPS_COORDS[stopB]]; 
+        }
+
         function drawStaticRoutes() {
             for (const [line, directions] of Object.entries(TRAM_ROUTES)) {
                 for (const route of Object.values(directions)) {
-                    const points = route.map(stop => STOPS_COORDS[stop]);
-                    L.polyline(points, { color: '#94a3b8', weight: 4, opacity: 0.35, interactive: false }).addTo(staticRoutesLayer);
+                    let linePoints = [];
+                    for(let i=0; i < route.length - 1; i++) {
+                        let segment = getDetailedPathBetweenStops(route[i], route[i+1]);
+                        linePoints = linePoints.concat(segment);
+                    }
+                    L.polyline(linePoints, { color: '#aaaaaa', weight: 3, opacity: 0.6, interactive: false }).addTo(staticRoutesLayer);
                 }
             }
+        }
+
+        function initRenovationZone() {
+            const center = [52.758356, 15.235881];
+            
+            L.circle(center, {
+                radius: 65, color: '#e65100', fillColor: '#ffcc80', fillOpacity: 0.5, weight: 2, dashArray: '5, 5'
+            }).addTo(renovationLayer);
+
+            const config = EVENT_CONFIG.remont;
+            const macroIcon = L.divIcon({
+                className: `map-marker pulse`,
+                html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; border: 2px solid white;">
+                           <span class="material-symbols-outlined icon-md">${config.icon}</span>
+                       </div>`,
+                iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18]
+            });
+
+            const html = `
+                <div class="popup-header" style="background-color: #e65100">
+                    <span class="icon-text-gap"><span class="material-symbols-outlined icon-sm">construction</span> Głęboki Remont</span>
+                </div>
+                <div class="popup-body">
+                    <div style="font-size:14px; font-weight:bold; margin-bottom:4px;">Rondo Barlineckie</div>
+                    <p style="color:var(--text-muted); font-size:12px;">Wyłączenie skrzyżowania z ruchu tramwajowego. Prace torowe.</p>
+                </div>
+            `;
+
+            L.marker(center, { icon: macroIcon }).addTo(renovationLayer).bindPopup(html);
         }
 
         function initStopMarkers() {
             for (const [stopName, coords] of Object.entries(STOPS_COORDS)) {
                 const icon = L.divIcon({
                     className: 'map-marker',
-                    html: `<div style="background-color:#0f172a; width:100%; height:100%; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;">
-                               <span class="material-symbols-outlined" style="font-size:16px;">tram</span>
+                    html: `<div style="background-color:#1b2a3a; width:100%; height:100%; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;">
+                               <span class="material-symbols-outlined" style="font-size:12px; font-weight:bold;">tram</span>
                            </div>`,
-                    iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14]
+                    iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12]
                 });
 
                 const marker = L.marker(coords, { icon: icon });
@@ -488,12 +615,12 @@
             }
 
             const html = `
-                <div class="popup-header" style="background-color: #0f172a;">
+                <div class="popup-header" style="background-color: #1b2a3a;">
                     <span class="icon-text-gap"><span class="material-symbols-outlined icon-sm">tram</span> ${stopName}</span>
                 </div>
                 <div class="popup-body">
-                    <p style="margin-bottom:10px; color:var(--text-muted);">Linie: <strong>${passingLines.join(', ')}</strong></p>
-                    <p style="font-size: 12px; color: var(--success);"><span class="material-symbols-outlined icon-sm">check_circle</span> Brak zgłoszonych utrudnień.</p>
+                    <p style="margin-bottom:8px; color:var(--text-muted);">Linie: <strong>${passingLines.join(', ')}</strong></p>
+                    <p style="font-size: 12px; color: var(--success); font-weight:bold;"><span class="material-symbols-outlined icon-sm" style="vertical-align:middle;">check_circle</span> Brak zgłoszeń.</p>
                 </div>
                 <div class="popup-actions">
                     <button class="btn-report-popup btn-start-report" data-stop="${stopName.replace(/"/g, '&quot;')}">
@@ -504,7 +631,6 @@
             stopMarkers[stopName].marker.bindPopup(html).openPopup();
         }
 
-        // Generator HTML dla dymków informacji (uniwersalny)
         function generateReportPopupHtml(displayStopName, itemData) {
             const r = itemData.report; 
             const config = EVENT_CONFIG[r.type];
@@ -517,25 +643,25 @@
                     <span class="icon-text-gap"><span class="material-symbols-outlined icon-sm">${config.icon}</span> ${config.label} (L${r.line})</span>
                 </div>
                 <div class="popup-body">
-                    <div style="font-size:16px; font-weight:800; margin-bottom:8px;">Przystanek: ${displayStopName}</div>
-                    <div class="icon-text-gap" style="margin-bottom: 8px;">
+                    <div style="font-size:15px; font-weight:bold; margin-bottom:6px;">Przystanek: ${displayStopName}</div>
+                    <div class="icon-text-gap" style="margin-bottom: 6px;">
                         <span class="material-symbols-outlined icon-sm">signpost</span> Kierunek: ${r.direction}
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); display:flex; justify-content: space-between;">
+                    <div style="font-size: 11px; color: var(--text-muted); display:flex; justify-content: space-between;">
                         <span>Dodano: ${getTimeAgo(r.createdAt)}</span>
-                        <span>Akt: ${getTimeAgo(r.lastActivity)}</span>
+                        <span>Aktualizacja: ${getTimeAgo(r.lastActivity)}</span>
                     </div>
-                    <div style="display: flex; gap: 16px; margin-top: 12px; justify-content: center;">
-                        <span class="icon-text-gap" style="color: var(--success); font-weight: 800;"><span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}</span>
-                        <span class="icon-text-gap" style="color: var(--danger); font-weight: 800;"><span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}/3</span>
+                    <div style="display: flex; gap: 10px; margin-top: 12px; justify-content: center;">
+                        <span class="icon-text-gap" style="color: var(--success); font-weight: bold;"><span class="material-symbols-outlined icon-sm">thumb_up</span> ${confirmsCount}</span>
+                        <span class="icon-text-gap" style="color: var(--primary); font-weight: bold;"><span class="material-symbols-outlined icon-sm">thumb_down</span> ${deniesCount}/3</span>
                     </div>
                 </div>
                 <div class="popup-actions">
-                    <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${r.id}" data-vote="up" title="Potwierdzam">
-                        <span class="material-symbols-outlined icon-lg">thumb_up</span>
+                    <button class="vote-btn ${userVote === 'up' ? 'active-up' : ''}" data-id="${r.id}" data-vote="up">
+                        <span class="material-symbols-outlined icon-sm">thumb_up</span> Potwierdź
                     </button>
-                    <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${r.id}" data-vote="down" title="Odwołaj">
-                        <span class="material-symbols-outlined icon-lg">thumb_down</span> 
+                    <button class="vote-btn ${userVote === 'down' ? 'active-down' : ''}" data-id="${r.id}" data-vote="down">
+                        <span class="material-symbols-outlined icon-sm">thumb_down</span> Odwołaj
                     </button>
                 </div>
             `;
@@ -578,13 +704,11 @@
             return null;
         }
 
-        // GŁÓWNA FUNKCJA RENDERUJĄCA SADA
         function renderNetworkState() {
             const currentZoom = map.getZoom();
             const showAllStops = currentZoom >= 14; 
             const activeList = getProcessedEvents();
 
-            // 1. Obsługa podglądu przystanków zaleznie od Zoomu
             for (const [stopName, obj] of Object.entries(stopMarkers)) {
                 obj.marker.setIcon(obj.defaultIcon);
                 if (showAllStops) {
@@ -594,7 +718,6 @@
                 }
             }
             
-            // Czyszczenie czerwonych tras i starych makro-markerów
             activePolylines.forEach(pl => map.removeLayer(pl));
             activePolylines = [];
             
@@ -606,29 +729,31 @@
                 }
             }
 
-            // 2. Renderowanie Aktywnych Zagrożeń (LOD i Normalny tryb)
             activeList.forEach(item => {
                 const config = EVENT_CONFIG[item.report.type];
                 const isFaded = (Date.now() - item.report.createdAt) > FADE_THRESHOLD_MS;
                 const pulseClass = (item.report.type === 'kanar' && !isFaded) ? 'pulse' : '';
                 
                 if (showAllStops) {
-                    // Tryb bliski (Detale: Czerwona trasa + ikony alertów na stacjach)
                     const alertIcon = L.divIcon({
                         className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
                         html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                   <span class="material-symbols-outlined icon-md">${config.icon}</span>
+                                   <span class="material-symbols-outlined icon-sm">${config.icon}</span>
                                </div>`,
-                        iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -20]
+                        iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -16]
                     });
 
                     const maxEnd = Math.min(item.currentIndex + 5, item.route.length);
-                    const polylinePoints = [];
+                    let polylinePoints = [];
 
                     for (let i = item.currentIndex; i < maxEnd; i++) {
                         const affectedStop = item.route[i];
-                        polylinePoints.push(STOPS_COORDS[affectedStop]);
                         
+                        if (i < maxEnd - 1) {
+                            let detailedSegment = getDetailedPathBetweenStops(item.route[i], item.route[i+1]);
+                            polylinePoints = polylinePoints.concat(detailedSegment);
+                        }
+
                         if (stopMarkers[affectedStop]) {
                             if (!map.hasLayer(stopMarkers[affectedStop].marker)) stopMarkers[affectedStop].marker.addTo(map);
                             stopMarkers[affectedStop].marker.setIcon(alertIcon);
@@ -639,17 +764,16 @@
                     }
 
                     if (polylinePoints.length > 1) {
-                        const polyline = L.polyline(polylinePoints, { color: config.color, weight: 6, opacity: 0.7, dashArray: '10, 10', lineJoin: 'round' }).addTo(map);
+                        const polyline = L.polyline(polylinePoints, { color: config.color, weight: 5, opacity: 0.8, lineJoin: 'round' }).addTo(map);
                         activePolylines.push(polyline);
                     }
                 } else {
-                    // Tryb oddalony (LOD) - 1 Ogromny Makro Znacznik w punkcie aktualnym
                     const macroIcon = L.divIcon({
                         className: `map-marker ${isFaded ? 'faded' : ''} ${pulseClass}`,
-                        html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; border: 4px solid white; box-shadow: 0 6px 15px rgba(0,0,0,0.5);">
-                                   <span class="material-symbols-outlined icon-lg">${config.icon}</span>
+                        html: `<div style="background-color:${config.color}; width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                                   <span class="material-symbols-outlined icon-md">${config.icon}</span>
                                </div>`,
-                        iconSize: [64, 64], iconAnchor: [32, 32], popupAnchor: [0, -32]
+                        iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -22]
                     });
 
                     const coords = STOPS_COORDS[item.currentStop];
@@ -663,65 +787,54 @@
                         macroMarkers[rId].setIcon(macroIcon);
                     }
                     
-                    if (macroMarkers[rId].getPopup()) {
-                        macroMarkers[rId].getPopup().setContent(html);
-                    } else {
-                        macroMarkers[rId].bindPopup(html);
-                    }
+                    if (macroMarkers[rId].getPopup()) { macroMarkers[rId].getPopup().setContent(html); } 
+                    else { macroMarkers[rId].bindPopup(html); }
                 }
             });
 
-            // 3. Budowanie panelu Live Feed (Odległości GPS)
             renderProximityFeed(activeList);
         }
 
-        // FEED PROXIMITY: Pokazuje MAX 1 zdarzenie, do którego się aktualnie zbliżasz i jest w obrębie 500m
         function renderProximityFeed(activeList) {
             const container = document.getElementById('proximity-container');
             
             if (!userLatLng) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:8px;">Oczekiwanie na sygnał GPS pasażera...</div>`;
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">Oczekiwanie na sygnał GPS pasażera...</div>`;
                 return;
             }
 
             if (activeList.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--success); font-size:0.9rem; font-weight:800; padding:12px 0;"><span class="material-symbols-outlined icon-sm">check_circle</span> Czysto. Brak zgłoszonych utrudnień.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:var(--success); font-size:0.9rem; font-weight:bold; padding:16px 0;"><span class="material-symbols-outlined icon-sm" style="vertical-align:middle;">check_circle</span> Trasa czysta. Brak utrudnień.</div>`;
                 return;
             }
 
-            // Przeliczenie odległości
             const feedData = activeList.map(item => {
                 return { ...item, distance: userLatLng.distanceTo(L.latLng(STOPS_COORDS[item.currentStop])) };
             });
 
-            // Sortowanie od najbliższego
             feedData.sort((a, b) => a.distance - b.distance);
-
             let targetEvent = null;
 
             for (const item of feedData) {
                 if (item.distance <= 500) {
                     let prevDist = eventDistancesHistory[item.report.id];
-                    // Czy się zbliżamy (lub stoimy w miejscu)? Dajemy 15 metrów marginesu błędu GPS
-                    let isApproaching = (prevDist === undefined) || (item.distance <= prevDist + 15);
+                    let isApproaching = (prevDist === undefined) || (item.distance <= prevDist + 12);
                     
                     if (isApproaching) {
                         targetEvent = item;
-                        break; // Bierzemy pierwsze, najbliższe, do którego się zbliżamy
+                        break; 
                     }
                 }
             }
 
-            // Zapis historii do przyszłej klatki dla wszystkich
             eventDistancesHistory = {};
             feedData.forEach(item => { eventDistancesHistory[item.report.id] = item.distance; });
 
             if (!targetEvent) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:700; padding:12px 0;"><span class="material-symbols-outlined icon-sm">explore</span> Skanowanie... Brak zagrożeń w strefie 500m.</div>`;
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; padding:16px 0;"><span class="material-symbols-outlined icon-sm" style="vertical-align:middle;">explore</span> Skanowanie (brak zagrożeń 500m)</div>`;
                 return;
             }
 
-            // Renderowanie karty celu
             const config = EVENT_CONFIG[targetEvent.report.type];
             const distStr = `${Math.round(targetEvent.distance)}m`;
             
@@ -734,29 +847,27 @@
                 <div class="alert-card-left">
                     <div class="alert-card-type">
                         <span class="material-symbols-outlined icon-sm" style="color:${config.color}">${config.icon}</span>
-                        ${config.label} (Linia ${targetEvent.report.line})
+                        ${config.label} (L${targetEvent.report.line})
                     </div>
-                    <div class="alert-card-stop">Zbliżasz się! Przystanek: ${targetEvent.currentStop}</div>
+                    <div class="alert-card-stop">Zbliżasz się • Prz: ${targetEvent.currentStop}</div>
                 </div>
-                <div class="alert-card-distance" style="background-color:${config.color}20; color:${config.color}">
-                    <span class="material-symbols-outlined icon-sm" style="font-size:14px!important;">warning</span> ${distStr}
+                <div class="alert-card-distance" style="color:${config.color}; border-color:${config.color};">
+                    <span class="material-symbols-outlined icon-sm">my_location</span> ${distStr}
                 </div>
             `;
 
             card.addEventListener('click', () => {
                 const coords = STOPS_COORDS[targetEvent.currentStop];
-                map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 1.2 });
+                map.flyTo([coords[0] - 0.003, coords[1]], 15, { animate: true, duration: 0.8 });
                 setTimeout(() => {
                     if(!map.hasLayer(stopMarkers[targetEvent.currentStop].marker)) stopMarkers[targetEvent.currentStop].marker.addTo(map);
                     stopMarkers[targetEvent.currentStop].marker.openPopup();
-                }, 1300);
+                }, 900);
             });
 
             container.appendChild(card);
         }
 
-
-        // --- FORMULARZ ZGŁOSZEŃ ---
         const modal = document.getElementById('modalOverlay');
         const inputLine = document.getElementById('event-line');
         const inputDir = document.getElementById('event-direction');
@@ -800,7 +911,7 @@
                     const stopIndex = routeArray.indexOf(selectedStopForReport);
                     if (stopIndex !== -1 && stopIndex < routeArray.length - 1) {
                         let opt = document.createElement('option');
-                        opt.value = dirName; opt.textContent = `Kierunek: ${dirName}`;
+                        opt.value = dirName; opt.textContent = `${dirName}`;
                         inputDir.appendChild(opt);
                     }
                 }
@@ -819,7 +930,6 @@
 
         btnSubmit.addEventListener('click', () => {
             if (!selectedStopForReport || !inputLine.value || !inputDir.value) return;
-
             const type = document.getElementById('event-type').value;
             const now = Date.now();
 
@@ -839,19 +949,18 @@
             }).then(() => {
                 localStorage.setItem(`vote_${newRef.key}`, 'up');
                 modal.style.display = 'none';
-                showToast("done", "Zgłoszono pomyślnie");
+                showToast("done", "Dodano zgłoszenie do systemu");
                 playSound('sound-notify');
                 
                 const coords = STOPS_COORDS[selectedStopForReport];
-                if(coords) map.flyTo([coords[0] - 0.005, coords[1]], 15);
+                if(coords) map.panTo([coords[0] - 0.003, coords[1]]);
             }).catch(() => {
-                showToast("error", "Błąd połączenia", true);
+                showToast("error", "Błąd sieci", true);
             }).finally(() => {
                 btnSubmit.textContent = "Wyślij";
             });
         });
 
-        // --- GLOBALNA DELEGACJA ZGŁOSZEŃ I GŁOSÓW ---
         let isVoting = false;
         document.addEventListener('click', (e) => {
             const btnReport = e.target.closest('.btn-start-report');
@@ -891,7 +1000,7 @@
             if (newDenies >= 3) {
                 remove(ref(db, `reports/${id}`)).then(() => {
                     localStorage.removeItem(storageKey);
-                    showToast("delete", "Usunięto utrudnienie (społeczność)");
+                    showToast("delete", "Odwołano zgłoszenie");
                     playSound('sound-cancel');
                     map.closePopup(); 
                 }).finally(() => { isVoting = false; });
@@ -899,14 +1008,13 @@
                 update(ref(db, `reports/${id}`), { confirms: newConfirms, denies: newDenies, lastActivity: Date.now() })
                 .then(() => {
                     if (previousVote !== voteType) {
-                        showToast("update", "Twój głos został zapisany");
+                        showToast("check_circle", "Głos zapisany");
                         if (voteType === 'up') playSound('sound-confirm');
                         else if (voteType === 'down') playSound('sound-cancel');
                     }
                 }).finally(() => { isVoting = false; });
             }
         });
-
     </script>
 </body>
 </html>
